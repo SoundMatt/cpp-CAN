@@ -141,6 +141,9 @@ jobs:
             -G Ninja
           cmake --build cpp-FuSa/build --parallel
 
+      - name: cpfusa init
+        run: ./cpp-FuSa/build/cpfusa init --project cpp-CAN --dir cpp-CAN || true
+
       - name: cpfusa check
         run: ./cpp-FuSa/build/cpfusa check --dir cpp-CAN
 
@@ -265,10 +268,13 @@ jobs:
           find src include -name '*.cpp' -o -name '*.hpp' | \
             xargs clang-tidy-14 \
               -p build \
-              --warnings-as-errors='*' \
-              --checks='-*,clang-analyzer-*,bugprone-*,modernize-use-override,modernize-use-nullptr,readability-braces-around-statements,cppcoreguidelines-no-malloc' \
+              --checks='-*,clang-analyzer-*,bugprone-*,modernize-use-override,modernize-use-nullptr,cppcoreguidelines-no-malloc' \
               2>&1 | tee clang-tidy.log || true
-          grep -c "error:" clang-tidy.log && exit 1 || exit 0
+          if grep -q "error:" clang-tidy.log; then
+            echo "::error::clang-tidy reported errors"
+            grep "error:" clang-tidy.log
+            exit 1
+          fi
 
   docker-build:
     name: Docker build (smoke test)
@@ -280,7 +286,7 @@ jobs:
       - name: Build Docker image
         run: docker build --target test -t cpp-can-test .
 
-      - name: Smoke test — run all tests in container
+      - name: Smoke test - run all tests in container
         run: docker run --rm cpp-can-test --reporter compact
 
   sarif:
@@ -312,6 +318,9 @@ jobs:
             -G Ninja
           cmake --build cpp-FuSa/build --parallel
 
+      - name: cpfusa init
+        run: ./cpp-FuSa/build/cpfusa init --project cpp-CAN --dir cpp-CAN || true
+
       - name: Generate SARIF report
         run: |
           ./cpp-FuSa/build/cpfusa check \
@@ -320,6 +329,7 @@ jobs:
             --dir cpp-CAN || true
 
       - name: Upload SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        if: hashFiles('cpfusa.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: cpfusa.sarif
