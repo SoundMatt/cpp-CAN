@@ -1,0 +1,325 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }} / ${{ matrix.compiler }} / C++${{ matrix.std }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            compiler: clang-14
+            std: 17
+            cc: clang-14
+            cxx: clang++-14
+          - os: ubuntu-22.04
+            compiler: gcc-12
+            std: 17
+            cc: gcc-12
+            cxx: g++-12
+          - os: ubuntu-22.04
+            compiler: gcc-12
+            std: 20
+            cc: gcc-12
+            cxx: g++-12
+          - os: macos-14
+            compiler: clang
+            std: 17
+            cc: clang
+            cxx: clang++
+          - os: windows-2022
+            compiler: msvc
+            std: 17
+            cc: cl
+            cxx: cl
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build
+
+      - name: Set up MSVC environment (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        shell: bash
+        env:
+          CC:  ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=${{ matrix.std }} \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -G Ninja
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test (single-threaded to avoid TempDir races)
+        run: ctest --test-dir build --output-on-failure -j1
+
+  coverage:
+    name: Coverage (LCOV)
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build lcov
+
+      - name: Configure (coverage build)
+        run: |
+          cmake -B build-cov \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="--coverage -O0" \
+            -DCMAKE_EXE_LINKER_FLAGS="--coverage" \
+            -G Ninja
+
+      - name: Build
+        run: cmake --build build-cov --parallel
+
+      - name: Test
+        run: ctest --test-dir build-cov --output-on-failure -j1
+
+      - name: Collect LCOV data
+        run: |
+          lcov --capture \
+            --directory build-cov \
+            --output-file coverage.info
+          lcov --remove coverage.info \
+            '*/tests/*' '*/catch2/*' '*/FetchContent/*' \
+            --output-file coverage.info
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.info
+
+  fusa-asil-b:
+    name: cpp-FuSa ASIL-B qualification
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    steps:
+      - name: Check out cpp-CAN
+        uses: actions/checkout@v4
+        with:
+          path: cpp-CAN
+
+      - name: Check out cpp-FuSa
+        uses: actions/checkout@v4
+        with:
+          repository: SoundMatt/cpp-FuSa
+          path: cpp-FuSa
+
+      - name: Install tools
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build zip
+
+      - name: Build cpfusa
+        run: |
+          cmake -B cpp-FuSa/build \
+            -S cpp-FuSa \
+            -DCMAKE_BUILD_TYPE=Release \
+            -G Ninja
+          cmake --build cpp-FuSa/build --parallel
+
+      - name: cpfusa check
+        run: ./cpp-FuSa/build/cpfusa check --dir cpp-CAN
+
+      - name: cpfusa lint
+        run: ./cpp-FuSa/build/cpfusa lint --dir cpp-CAN || true
+
+      - name: cpfusa trace (requirements traceability)
+        run: ./cpp-FuSa/build/cpfusa trace --dir cpp-CAN
+
+      - name: cpfusa cyber
+        run: ./cpp-FuSa/build/cpfusa cyber --write --dir cpp-CAN || true
+
+      - name: cpfusa qualify (ASIL-B gate)
+        run: ./cpp-FuSa/build/cpfusa qualify --dir cpp-CAN
+
+      - name: cpfusa hara init
+        run: ./cpp-FuSa/build/cpfusa hara init --project cpp-CAN --dir cpp-CAN || true
+
+      - name: cpfusa iso26262 (ASIL-B)
+        run: |
+          ./cpp-FuSa/build/cpfusa iso26262 \
+            --asil ASIL-B \
+            --output cpp-CAN/iso26262-gap-report.json \
+            --dir cpp-CAN || true
+
+      - name: cpfusa iec61508 (SIL-2)
+        run: |
+          ./cpp-FuSa/build/cpfusa iec61508 \
+            --sil SIL-2 \
+            --output cpp-CAN/iec61508-gap-report.json \
+            --dir cpp-CAN || true
+
+      - name: cpfusa boundary
+        run: ./cpp-FuSa/build/cpfusa boundary --dir cpp-CAN
+
+      - name: cpfusa tara
+        run: ./cpp-FuSa/build/cpfusa tara --dir cpp-CAN
+
+      - name: cpfusa fmea
+        run: ./cpp-FuSa/build/cpfusa fmea --dir cpp-CAN
+
+      - name: cpfusa safety-case
+        run: ./cpp-FuSa/build/cpfusa safety-case --dir cpp-CAN
+
+      - name: cpfusa sas
+        run: ./cpp-FuSa/build/cpfusa sas --dir cpp-CAN
+
+      - name: cpfusa sci
+        run: ./cpp-FuSa/build/cpfusa sci --dir cpp-CAN
+
+      - name: cpfusa badge
+        run: ./cpp-FuSa/build/cpfusa badge --dir cpp-CAN
+
+      - name: cpfusa vuln
+        run: ./cpp-FuSa/build/cpfusa vuln --dir cpp-CAN
+
+      - name: cpfusa metrics record
+        run: ./cpp-FuSa/build/cpfusa metrics record --dir cpp-CAN
+
+      - name: cpfusa report (JSON)
+        run: |
+          ./cpp-FuSa/build/cpfusa report \
+            --format json \
+            --output cpp-CAN/check-report.json \
+            --dir cpp-CAN
+
+      - name: Upload ASIL-B evidence artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: asil-b-evidence
+          path: |
+            cpp-CAN/check-report.json
+            cpp-CAN/qualify-report.json
+            cpp-CAN/cyber-report.json
+            cpp-CAN/tara.json
+            cpp-CAN/tara.md
+            cpp-CAN/fmea.json
+            cpp-CAN/fmea.csv
+            cpp-CAN/safety-case.json
+            cpp-CAN/safety-case.mermaid
+            cpp-CAN/safety-case.md
+            cpp-CAN/sbom.json
+            cpp-CAN/provenance.json
+            cpp-CAN/artifact-manifest.json
+            cpp-CAN/fusa-badge.svg
+            cpp-CAN/iso26262-gap-report.json
+            cpp-CAN/iec61508-gap-report.json
+            cpp-CAN/sas.json
+            cpp-CAN/sas.md
+            cpp-CAN/sci.json
+            cpp-CAN/vuln.json
+            cpp-CAN/boundary.mermaid
+            cpp-CAN/boundary.dot
+            cpp-CAN/.fusa-hara.json
+            cpp-CAN/.fusa-metrics.json
+
+  static-analysis:
+    name: Static analysis (clang-tidy)
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build clang-14 clang-tidy-14
+
+      - name: Configure (generate compile_commands.json)
+        env:
+          CC: clang-14
+          CXX: clang++-14
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=17 \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -G Ninja
+
+      - name: clang-tidy
+        run: |
+          find src include -name '*.cpp' -o -name '*.hpp' | \
+            xargs clang-tidy-14 \
+              -p build \
+              --warnings-as-errors='*' \
+              --checks='-*,clang-analyzer-*,bugprone-*,modernize-use-override,modernize-use-nullptr,readability-braces-around-statements,cppcoreguidelines-no-malloc' \
+              2>&1 | tee clang-tidy.log || true
+          grep -c "error:" clang-tidy.log && exit 1 || exit 0
+
+  docker-build:
+    name: Docker build (smoke test)
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build --target test -t cpp-can-test .
+
+      - name: Smoke test — run all tests in container
+        run: docker run --rm cpp-can-test --reporter compact
+
+  sarif:
+    name: SARIF upload
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    permissions:
+      security-events: write
+    steps:
+      - name: Check out cpp-CAN
+        uses: actions/checkout@v4
+        with:
+          path: cpp-CAN
+
+      - name: Check out cpp-FuSa
+        uses: actions/checkout@v4
+        with:
+          repository: SoundMatt/cpp-FuSa
+          path: cpp-FuSa
+
+      - name: Install tools
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build
+
+      - name: Build cpfusa
+        run: |
+          cmake -B cpp-FuSa/build \
+            -S cpp-FuSa \
+            -DCMAKE_BUILD_TYPE=Release \
+            -G Ninja
+          cmake --build cpp-FuSa/build --parallel
+
+      - name: Generate SARIF report
+        run: |
+          ./cpp-FuSa/build/cpfusa check \
+            --format sarif \
+            --output cpfusa.sarif \
+            --dir cpp-CAN || true
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: cpfusa.sarif

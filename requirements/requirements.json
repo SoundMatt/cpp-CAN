@@ -1,0 +1,597 @@
+[
+  {
+    "id": "REQ-CAN-001",
+    "title": "CAN Frame structure",
+    "text": "The system shall define a Frame type carrying: arbitration ID (uint32), extended-ID flag, RTR flag, FD flag, BRS flag, and data payload.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-002",
+    "title": "Max data length query",
+    "text": "The system shall provide max_data_len(fd) returning 8 for standard CAN and 64 for CAN FD.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-CAN-003",
+    "title": "Frame filter structure",
+    "text": "The system shall define a Filter type with ID and Mask fields.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-CAN-004",
+    "title": "Filter match predicate",
+    "text": "The system shall implement Filter::matches(f) returning true when (f.id & mask) == (id & mask).",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-CAN-005",
+    "title": "Spec version constant",
+    "text": "The system shall export kSpecVersion = \"0.2\" matching the RELAY spec version.",
+    "category": "functional",
+    "criticality": "low"
+  },
+  {
+    "id": "REQ-CAN-006",
+    "title": "IBus interface",
+    "text": "The system shall define an IBus abstract interface with send(), subscribe(), and close() methods.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-007",
+    "title": "RELAY bridge",
+    "text": "The system shall provide to_message(), from_message(), and adapt() to bridge CAN frames with relay::Message and relay::INode.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-008",
+    "title": "Error sentinel aliases",
+    "text": "The system shall alias relay error sentinels (ErrClosed, ErrNotConnected, ErrTimeout, ErrPayloadTooLarge) in the can namespace.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-CAN-009",
+    "title": "Validate standard ID",
+    "text": "validate_frame() shall throw ErrInvalidFrame when a non-extended frame ID exceeds 0x7FF.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-010",
+    "title": "Validate extended ID",
+    "text": "validate_frame() shall throw ErrInvalidFrame when an extended frame ID exceeds 0x1FFFFFFF.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-011",
+    "title": "Validate data length",
+    "text": "validate_frame() shall throw ErrInvalidFrame when standard CAN data exceeds 8 bytes or CAN FD data exceeds 64 bytes.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-012",
+    "title": "Validate RTR data",
+    "text": "validate_frame() shall throw ErrInvalidFrame when an RTR frame carries data.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-013",
+    "title": "Validate RTR+FD combination",
+    "text": "validate_frame() shall throw ErrInvalidFrame when both RTR and FD flags are set.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-014",
+    "title": "Validate BRS requires FD",
+    "text": "validate_frame() shall throw ErrInvalidFrame when BRS is set without FD.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-VIRT-001",
+    "title": "Virtual bus creation",
+    "text": "virt::Bus::create() shall return a non-null shared_ptr to an in-process broadcast bus.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-VIRT-002",
+    "title": "Virtual bus broadcast send",
+    "text": "A frame sent on the virtual bus shall be delivered to all matching subscribers including the sender.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-VIRT-003",
+    "title": "Virtual bus subscribe",
+    "text": "subscribe() shall return a channel that receives frames matching supplied filters; with empty filters all frames are delivered.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-VIRT-004",
+    "title": "Virtual bus back-pressure",
+    "text": "The virtual bus shall support DropNewest, DropOldest, and Block back-pressure policies per subscriber.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-VIRT-005",
+    "title": "Virtual bus lifecycle",
+    "text": "close() shall be idempotent; send/subscribe after close shall return ErrClosed; subscriber channels shall be closed when the bus closes.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-ISOTP-001",
+    "title": "ISO-TP configuration",
+    "text": "Conn::create() shall accept a Config with TxID, RxID, ExtIDs, BlockSize, STmin, and timeout.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-ISOTP-002",
+    "title": "ISO-TP RxID subscription",
+    "text": "Conn::create() shall subscribe for the configured RxID on the provided bus.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-ISOTP-003",
+    "title": "ISO-TP ExtIDs flag",
+    "text": "The ISO-TP Conn shall use 29-bit extended IDs when cfg.ext_ids is true.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-ISOTP-004",
+    "title": "ISO-TP Conn type",
+    "text": "Conn shall be an opaque connection type obtained from Conn::create().",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-ISOTP-005",
+    "title": "ISO-TP single-frame send",
+    "text": "send() shall transmit payloads of 1–7 bytes as a Single Frame (SF).",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-ISOTP-006",
+    "title": "ISO-TP first frame send",
+    "text": "send() shall transmit the first 6 bytes of multi-frame payloads as a First Frame (FF).",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-ISOTP-007",
+    "title": "ISO-TP consecutive frame send",
+    "text": "send() shall transmit remaining bytes as Consecutive Frames (CF) after receiving Flow Control.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-ISOTP-008",
+    "title": "ISO-TP payload limit",
+    "text": "send() shall return ErrPayloadTooLarge for payloads exceeding 4095 bytes.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-ISOTP-009",
+    "title": "ISO-TP single-frame receive",
+    "text": "recv() shall reassemble a Single Frame and return the payload.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-ISOTP-010",
+    "title": "ISO-TP first-frame receive",
+    "text": "recv() shall detect a First Frame and send a Flow Control response.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-ISOTP-011",
+    "title": "ISO-TP consecutive-frame receive",
+    "text": "recv() shall assemble all Consecutive Frames into the complete payload.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-ISOTP-012",
+    "title": "ISO-TP sequence number check",
+    "text": "recv() shall verify Consecutive Frame sequence numbers and return an error on mismatch.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-ISOTP-013",
+    "title": "ISO-TP bus-closed handling",
+    "text": "recv() shall return an error when the underlying bus channel closes.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-J1939-001",
+    "title": "J1939 ID decoding",
+    "text": "decode_id() shall extract Priority, PGN, and Source Address from a 29-bit J1939 CAN ID.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-J1939-002",
+    "title": "J1939 PDU format distinction",
+    "text": "decode_id() shall treat PF < 240 as peer-to-peer (PS is destination) and PF >= 240 as broadcast (PS is part of PGN).",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-J1939-003",
+    "title": "J1939 Data Page bit",
+    "text": "decode_id() shall include the Data Page bit in the PGN.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-J1939-004",
+    "title": "J1939 ID encoding",
+    "text": "encode_id() shall build a 29-bit J1939 CAN ID from Priority, PGN, and Source Address.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-J1939-005",
+    "title": "J1939 Bus send",
+    "text": "Bus::send() shall encode and transmit J1939 frames, using BAM TP for payloads > 8 bytes.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-J1939-006",
+    "title": "J1939 Bus subscribe",
+    "text": "Bus::subscribe() shall deliver decoded J1939 frames filtered by PGN; with no PGNs all frames are delivered.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SAFETY-001",
+    "title": "E2E Config",
+    "text": "The E2E Config shall include DataID and SourceID fields.",
+    "category": "safety",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SAFETY-002",
+    "title": "E2E header size",
+    "text": "The E2E header shall be exactly 10 bytes.",
+    "category": "safety",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SAFETY-003",
+    "title": "E2E error kinds",
+    "text": "The system shall define E2EErrorKind values for CRCMismatch, SequenceGap, and HeaderTooShort.",
+    "category": "safety",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SAFETY-004",
+    "title": "Protector construction",
+    "text": "Protector shall be constructible from Config and maintain a monotonically increasing sequence counter.",
+    "category": "safety",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SAFETY-005",
+    "title": "Protector protect()",
+    "text": "protect() shall prepend the 10-byte E2E header to the payload and return the combined buffer.",
+    "category": "safety",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SAFETY-006",
+    "title": "Sequence counter increment",
+    "text": "Each call to protect() shall increment the sequence counter by 1.",
+    "category": "safety",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SAFETY-007",
+    "title": "Receiver header length check",
+    "text": "unwrap() shall throw E2EError(HeaderTooShort) when data is shorter than 10 bytes.",
+    "category": "safety",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SAFETY-008",
+    "title": "Receiver CRC check",
+    "text": "unwrap() shall throw E2EError(CRCMismatch) when the CRC does not match.",
+    "category": "safety",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SAFETY-009",
+    "title": "Receiver sequence gap check",
+    "text": "unwrap() shall throw E2EError(SequenceGap) when the sequence number is not exactly lastSeq+1.",
+    "category": "safety",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SAFETY-010",
+    "title": "Receiver sequential success",
+    "text": "unwrap() shall succeed for a sequence of consecutive frames with correct CRC.",
+    "category": "safety",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SAFETY-011",
+    "title": "Receiver thread safety",
+    "text": "Receiver::unwrap() shall be thread-safe (mutex-protected sequence counter).",
+    "category": "safety",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-DBC-001",
+    "title": "DBC parse messages",
+    "text": "parse() shall read BO_ lines and populate DB.messages with Message entries.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-DBC-002",
+    "title": "DBC byte order",
+    "text": "The parser shall support both LittleEndian (Intel @1) and BigEndian (Motorola @0) signal byte orders.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-DBC-003",
+    "title": "DBC parse signals",
+    "text": "parse() shall read SG_ lines and populate Message.signals with Signal entries.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-DBC-004",
+    "title": "DBC message fields",
+    "text": "Each parsed Message shall include: ID, name, DLC, sender, and signals map.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-DBC-005",
+    "title": "Signal physical decode",
+    "text": "Signal::decode() shall extract raw bits and apply factor/offset to return the physical value.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-DBC-006",
+    "title": "VAL_ value table",
+    "text": "parse() shall read VAL_ lines and populate Signal.values with raw→label mappings.",
+    "category": "functional",
+    "criticality": "low"
+  },
+  {
+    "id": "REQ-DBC-007",
+    "title": "DB decode",
+    "text": "DB::decode() shall return all signal physical values for a given message ID and data.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-001",
+    "title": "Protocol type",
+    "text": "The system shall define a Protocol integer enum with zero reserved.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-RELAY-002",
+    "title": "Protocol constants",
+    "text": "The system shall define Protocol constants CAN=1, DDS=2, LIN=3, MQTT=4, RCP=5, SOMEIP=6.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-RELAY-003",
+    "title": "Protocol to_string",
+    "text": "to_string(Protocol) shall return the canonical upper-case name.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-004",
+    "title": "Version type",
+    "text": "The system shall define a Version triple with major, minor, patch fields.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-005",
+    "title": "Version to_string",
+    "text": "Version::to_string() shall return \"MAJOR.MINOR.PATCH\".",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-006",
+    "title": "Message type",
+    "text": "The system shall define a Message envelope with protocol, version, id, payload, timestamp, seq, and meta fields.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-RELAY-007",
+    "title": "Message seq and meta optional",
+    "text": "seq and meta shall default to zero/empty and be omitted from serialization when not set.",
+    "category": "functional",
+    "criticality": "low"
+  },
+  {
+    "id": "REQ-RELAY-008",
+    "title": "ErrClosed sentinel",
+    "text": "The system shall define ErrClosed() returning a distinct error_code for the closed state.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-RELAY-009",
+    "title": "ErrNotConnected sentinel",
+    "text": "The system shall define ErrNotConnected() for the not-connected state.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-RELAY-010",
+    "title": "ErrTimeout sentinel",
+    "text": "The system shall define ErrTimeout() for the timeout state.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-RELAY-011",
+    "title": "ErrPayloadTooLarge sentinel",
+    "text": "The system shall define ErrPayloadTooLarge() for the oversized payload state.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-RELAY-012",
+    "title": "Error sentinel distinctness",
+    "text": "All four error sentinels shall be distinct (no two shall compare equal).",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-RELAY-013",
+    "title": "INode interface",
+    "text": "The system shall define INode with protocol(), send(), subscribe(), and close() methods.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-RELAY-014",
+    "title": "ICaller interface",
+    "text": "The system shall define ICaller extending INode with a synchronous call() method.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-015",
+    "title": "BackPressurePolicy enum",
+    "text": "The system shall define BackPressurePolicy with DropNewest=0, DropOldest=1, Block=2.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-016",
+    "title": "SubscriberConfig type",
+    "text": "The system shall define SubscriberConfig with chan_depth, back_pressure, event_id, and topic_name.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-017",
+    "title": "SubscriberOption factories",
+    "text": "The system shall provide with_channel_depth(), with_back_pressure(), with_event_id(), and with_topic() option factories.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-018",
+    "title": "apply_options()",
+    "text": "apply_options() shall apply each option in order to a zero-initialized SubscriberConfig and return it.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-019",
+    "title": "effective_depth()",
+    "text": "SubscriberConfig::effective_depth(d) shall return chan_depth if > 0, otherwise d.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-020",
+    "title": "kSpecVersion constant",
+    "text": "The system shall export kSpecVersion = \"0.2\".",
+    "category": "functional",
+    "criticality": "low"
+  },
+  {
+    "id": "REQ-RELAY-023",
+    "title": "HealthStatus enum",
+    "text": "The system shall define HealthStatus with OK=0, Degraded=1, Down=2.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-024",
+    "title": "Health struct",
+    "text": "The system shall define a Health struct with status and details fields.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-025",
+    "title": "IHealthProvider interface",
+    "text": "The system shall define IHealthProvider with a health() method.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-026",
+    "title": "Metrics struct",
+    "text": "The system shall define a Metrics struct with write_count, deliver_count, drop_count, bytes_written, bytes_delivered, and error_count.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-027",
+    "title": "IMetricsProvider interface",
+    "text": "The system shall define IMetricsProvider with a metrics() method.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-028",
+    "title": "IDrainer interface",
+    "text": "The system shall define IDrainer with close_with_drain(timeout) that waits for all deliveries before closing.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-051",
+    "title": "with_event_id option",
+    "text": "with_event_id(id) shall set event_id in SubscriberConfig.",
+    "category": "functional",
+    "criticality": "low"
+  },
+  {
+    "id": "REQ-RELAY-056",
+    "title": "with_topic option",
+    "text": "with_topic(name) shall set topic_name in SubscriberConfig.",
+    "category": "functional",
+    "criticality": "low"
+  },
+  {
+    "id": "REQ-RELAY-059",
+    "title": "parse_protocol()",
+    "text": "parse_protocol() shall map a protocol name (case-insensitive) to its Protocol constant and throw on unknown names.",
+    "category": "functional",
+    "criticality": "medium"
+  }
+]
