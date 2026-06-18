@@ -237,6 +237,52 @@ jobs:
             cpp-CAN/.fusa-hara.json
             cpp-CAN/.fusa-metrics.json
 
+  static-analysis:
+    name: Static analysis (clang-tidy)
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build clang-14 clang-tidy-14
+
+      - name: Configure (generate compile_commands.json)
+        env:
+          CC: clang-14
+          CXX: clang++-14
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=17 \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -G Ninja
+
+      - name: clang-tidy
+        run: |
+          find src include -name '*.cpp' -o -name '*.hpp' | \
+            xargs clang-tidy-14 \
+              -p build \
+              --warnings-as-errors='*' \
+              --checks='-*,clang-analyzer-*,bugprone-*,modernize-use-override,modernize-use-nullptr,readability-braces-around-statements,cppcoreguidelines-no-malloc' \
+              2>&1 | tee clang-tidy.log || true
+          grep -c "error:" clang-tidy.log && exit 1 || exit 0
+
+  docker-build:
+    name: Docker build (smoke test)
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build --target test -t cpp-can-test .
+
+      - name: Smoke test — run all tests in container
+        run: docker run --rm cpp-can-test --reporter compact
+
   sarif:
     name: SARIF upload
     runs-on: ubuntu-22.04
