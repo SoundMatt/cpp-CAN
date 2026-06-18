@@ -72,7 +72,7 @@ TEST_CASE("J1939 Bus: send and receive single-packet frame", "[j1939][REQ-J1939-
     can_bus->close();
 }
 
-TEST_CASE("J1939 Bus: PGN filter — non-matching PGN not delivered", "[j1939][REQ-J1939-006]") {
+TEST_CASE("J1939 Bus: PGN filter - non-matching PGN not delivered", "[j1939][REQ-J1939-006]") {
     auto can_bus = can::virt::Bus::create();
     auto j_bus   = Bus::create(can_bus, 0x00);
 

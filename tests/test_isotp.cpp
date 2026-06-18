@@ -23,7 +23,7 @@ static std::pair<std::unique_ptr<Conn>, std::unique_ptr<Conn>> make_echo_pair() 
     return {std::move(a), std::move(b)};
 }
 
-TEST_CASE("single-frame send/recv round-trip (≤7 bytes)", "[isotp][REQ-ISOTP-005][REQ-ISOTP-009]") {
+TEST_CASE("single-frame send/recv round-trip (<=7 bytes)", "[isotp][REQ-ISOTP-005][REQ-ISOTP-009]") {
     auto [sender, recvr] = make_echo_pair();
     std::vector<uint8_t> payload = {0x01, 0x02, 0x03, 0x04};
 
