@@ -1,0 +1,4 @@
+CompileFlags:
+  Add:
+    - "-std=c++17"
+    - "-I/Users/matt/Documents/Coding/SoundMatt/cpp-CAN/include"
