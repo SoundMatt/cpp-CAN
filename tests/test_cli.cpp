@@ -185,3 +185,47 @@ TEST_CASE("message_to_json: meta fields are sorted", "[cli][REQ-CLI-005]") {
     CHECK(ext < fd);
     CHECK(fd  < rtr);
 }
+
+TEST_CASE("parse_frame_json: CAN XL fields", "[cli][REQ-CLI-004]") {
+    auto f = parse_frame_json(
+        R"({"id":291,"xl":true,"esi":true,"sdt":5,"vcid":2,"af":51966,"sec":true,"data":"3q2+7w=="})");
+    CHECK(f.id   == 291u);
+    CHECK(f.xl   == true);
+    CHECK(f.esi  == true);
+    CHECK(f.sdt  == 5);
+    CHECK(f.vcid == 2);
+    CHECK(f.af   == 51966u);
+    CHECK(f.sec  == true);
+    REQUIRE(f.data.size() == 4);
+    CHECK(f.data[0] == 0xDE);
+    CHECK(f.data[3] == 0xEF);
+}
+
+TEST_CASE("message_to_json: CAN XL meta fields emitted conditionally", "[cli][REQ-CLI-005]") {
+    can::Frame f{};
+    f.id = 291; f.xl = true; f.esi = true;
+    f.sdt = 5; f.vcid = 2; f.af = 51966; f.sec = true;
+    f.data = {0xDE, 0xAD, 0xBE, 0xEF};
+    auto msg = can::to_message(f);
+    msg.timestamp = {}; msg.seq = 0;
+    std::string j = message_to_json(msg);
+    CHECK(j.find("\"can.xl\":\"true\"")    != std::string::npos);
+    CHECK(j.find("\"can.esi\":\"true\"")   != std::string::npos);
+    CHECK(j.find("\"can.sdt\":\"5\"")      != std::string::npos);
+    CHECK(j.find("\"can.vcid\":\"2\"")     != std::string::npos);
+    CHECK(j.find("\"can.af\":\"51966\"")   != std::string::npos);
+    CHECK(j.find("\"can.sec\":\"true\"")   != std::string::npos);
+}
+
+TEST_CASE("message_to_json: XL meta absent when zero/false", "[cli][REQ-CLI-005]") {
+    can::Frame f{0x1, false, false, false, false, {1}};
+    auto msg = can::to_message(f);
+    msg.timestamp = {}; msg.seq = 0;
+    std::string j = message_to_json(msg);
+    CHECK(j.find("can.xl")   == std::string::npos);
+    CHECK(j.find("can.esi")  == std::string::npos);
+    CHECK(j.find("can.sdt")  == std::string::npos);
+    CHECK(j.find("can.vcid") == std::string::npos);
+    CHECK(j.find("can.af")   == std::string::npos);
+    CHECK(j.find("can.sec")  == std::string::npos);
+}

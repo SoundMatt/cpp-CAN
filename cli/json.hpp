@@ -132,11 +132,18 @@ inline can::Frame parse_frame_json(const std::string& json) {
     can::Frame f{};
     if (!detail::extract_u32(json, "id", f.id))
         throw std::runtime_error("ErrInvalidInput: missing or invalid 'id'");
-    detail::extract_bool(json, "ext", f.ext);
-    detail::extract_bool(json, "rtr", f.rtr);
-    detail::extract_bool(json, "fd",  f.fd);
-    detail::extract_bool(json, "brs", f.brs);
+    detail::extract_bool(json, "ext",  f.ext);
+    detail::extract_bool(json, "rtr",  f.rtr);
+    detail::extract_bool(json, "fd",   f.fd);
+    detail::extract_bool(json, "brs",  f.brs);
     detail::extract_bytes(json, "data", f.data);
+    detail::extract_bool(json, "esi",  f.esi);
+    detail::extract_bool(json, "xl",   f.xl);
+    detail::extract_bool(json, "sec",  f.sec);
+    uint32_t tmp{};
+    if (detail::extract_u32(json, "sdt",  tmp)) f.sdt  = static_cast<uint8_t>(tmp);
+    if (detail::extract_u32(json, "vcid", tmp)) f.vcid = static_cast<uint8_t>(tmp);
+    if (detail::extract_u32(json, "af",   tmp)) f.af   = tmp;
     return f;
 }
 

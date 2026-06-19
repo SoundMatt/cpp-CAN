@@ -31,6 +31,7 @@ inline constexpr const char* kSpecVersion = "0.2";
 
 inline constexpr uint32_t kCANMaxDataLen   = 8;
 inline constexpr uint32_t kCANFDMaxDataLen = 64;
+inline constexpr uint32_t kCANXLMaxDataLen = 2048;
 inline constexpr uint32_t kCANMaxStdID     = 0x7FF;
 inline constexpr uint32_t kCANMaxExtID     = 0x1FFFFFFF;
 
@@ -46,12 +47,18 @@ inline std::error_code ErrPayloadTooLarge() noexcept { return relay::ErrPayloadT
 
 // fusa:req REQ-CAN-001 REQ-CAN-001B REQ-CAN-001C
 struct Frame {
-    uint32_t             id{};    // arbitration ID (11 or 29 bits)
+    uint32_t             id{};    // arbitration / priority ID (11 or 29 bits)
     bool                 ext{};   // true → 29-bit extended ID
     bool                 rtr{};   // Remote Transmission Request
     bool                 fd{};    // CAN FD frame (payload up to 64 bytes)
     bool                 brs{};   // Bit-Rate Switch (FD only)
-    std::vector<uint8_t> data;    // payload (0-8 bytes CAN, 0-64 bytes FD)
+    std::vector<uint8_t> data;    // payload
+    bool                 esi{};   // Error State Indicator (FD/XL)
+    bool                 xl{};    // CAN XL frame (payload up to 2048 bytes)
+    uint8_t              sdt{};   // SDU Type (XL only)
+    uint8_t              vcid{};  // Virtual CAN network ID (XL only)
+    uint32_t             af{};    // Acceptance Field (XL only)
+    bool                 sec{};   // Simple Extended Content (XL only)
 };
 
 // ── Filter ────────────────────────────────────────────────────────────────────

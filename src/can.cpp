@@ -17,20 +17,37 @@ namespace can {
 // fusa:req REQ-CAN-009 REQ-CAN-010 REQ-CAN-011 REQ-CAN-012 REQ-CAN-013 REQ-CAN-014
 // fusa:req REQ-SEC-001 REQ-SEC-002 REQ-SEC-003
 void validate_frame(const Frame& f) {
-    if (f.ext && f.id > kCANMaxExtID)
-        throw ErrInvalidFrame("extended ID exceeds 29 bits");
-    if (!f.ext && f.id > kCANMaxStdID)
-        throw ErrInvalidFrame("standard ID exceeds 11 bits");
-    if (f.rtr && f.fd)
-        throw ErrInvalidFrame("RTR frame cannot be CAN FD");
-    if (f.rtr && !f.data.empty())
-        throw ErrInvalidFrame("RTR frame must not carry data");
-    if (!f.fd && f.data.size() > kCANMaxDataLen)
-        throw ErrInvalidFrame("standard CAN frame data exceeds 8 bytes");
-    if (f.fd && f.data.size() > kCANFDMaxDataLen)
-        throw ErrInvalidFrame("CAN FD frame data exceeds 64 bytes");
-    if (f.brs && !f.fd)
-        throw ErrInvalidFrame("BRS requires fd=true");
+    if (f.fd && f.xl)
+        throw ErrInvalidFrame("FD and XL are mutually exclusive");
+    if (f.xl) {
+        if (f.ext)
+            throw ErrInvalidFrame("CAN XL frame must not use extended ID");
+        if (f.rtr)
+            throw ErrInvalidFrame("CAN XL frame must not be RTR");
+        if (f.brs)
+            throw ErrInvalidFrame("CAN XL frame must not have BRS");
+        if (f.id > kCANMaxStdID)
+            throw ErrInvalidFrame("CAN XL priority ID exceeds 11 bits");
+        if (f.data.empty() || f.data.size() > kCANXLMaxDataLen)
+            throw ErrInvalidFrame("CAN XL data must be 1–2048 bytes");
+    } else {
+        if (f.ext && f.id > kCANMaxExtID)
+            throw ErrInvalidFrame("extended ID exceeds 29 bits");
+        if (!f.ext && f.id > kCANMaxStdID)
+            throw ErrInvalidFrame("standard ID exceeds 11 bits");
+        if (f.rtr && f.fd)
+            throw ErrInvalidFrame("RTR frame cannot be CAN FD");
+        if (f.rtr && !f.data.empty())
+            throw ErrInvalidFrame("RTR frame must not carry data");
+        if (!f.fd && f.data.size() > kCANMaxDataLen)
+            throw ErrInvalidFrame("standard CAN frame data exceeds 8 bytes");
+        if (f.fd && f.data.size() > kCANFDMaxDataLen)
+            throw ErrInvalidFrame("CAN FD frame data exceeds 64 bytes");
+        if (f.brs && !f.fd)
+            throw ErrInvalidFrame("BRS requires fd=true");
+        if (f.esi && !f.fd)
+            throw ErrInvalidFrame("ESI requires fd=true or xl=true");
+    }
 }
 
 // ── RELAY bridge: to_message / from_message ───────────────────────────────────
@@ -46,6 +63,12 @@ relay::Message to_message(const Frame& f) {
     m.meta["can.fd"]  = f.fd  ? "true" : "false";
     m.meta["can.rtr"] = f.rtr ? "true" : "false";
     m.meta["can.brs"] = f.brs ? "true" : "false";
+    if (f.esi)       m.meta["can.esi"]  = "true";
+    if (f.xl)        m.meta["can.xl"]   = "true";
+    if (f.sdt != 0)  m.meta["can.sdt"]  = std::to_string(static_cast<unsigned>(f.sdt));
+    if (f.vcid != 0) m.meta["can.vcid"] = std::to_string(static_cast<unsigned>(f.vcid));
+    if (f.af != 0)   m.meta["can.af"]   = std::to_string(f.af);
+    if (f.sec)       m.meta["can.sec"]  = "true";
     return m;
 }
 
@@ -72,6 +95,18 @@ Frame from_message(const relay::Message& m) {
     if (it != m.meta.end() && it->second == "true") f.rtr = true;
     it = m.meta.find("can.brs");
     if (it != m.meta.end() && it->second == "true") f.brs = true;
+    it = m.meta.find("can.esi");
+    if (it != m.meta.end() && it->second == "true") f.esi = true;
+    it = m.meta.find("can.xl");
+    if (it != m.meta.end() && it->second == "true") f.xl = true;
+    it = m.meta.find("can.sdt");
+    if (it != m.meta.end()) f.sdt = static_cast<uint8_t>(std::stoull(it->second));
+    it = m.meta.find("can.vcid");
+    if (it != m.meta.end()) f.vcid = static_cast<uint8_t>(std::stoull(it->second));
+    it = m.meta.find("can.af");
+    if (it != m.meta.end()) f.af = static_cast<uint32_t>(std::stoull(it->second));
+    it = m.meta.find("can.sec");
+    if (it != m.meta.end() && it->second == "true") f.sec = true;
     return f;
 }
 
