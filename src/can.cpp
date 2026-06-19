@@ -15,6 +15,7 @@ namespace can {
 // ── validate_frame ────────────────────────────────────────────────────────────
 
 // fusa:req REQ-CAN-009 through REQ-CAN-014
+// fusa:req REQ-SEC-001 REQ-SEC-002 REQ-SEC-003
 void validate_frame(const Frame& f) {
     if (f.ext && f.id > kCANMaxExtID)
         throw ErrInvalidFrame("extended ID exceeds 29 bits");

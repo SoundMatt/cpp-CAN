@@ -27,6 +27,7 @@ std::shared_ptr<Bus> Bus::create() {
 // fusa:req REQ-VIRT-001
 // fusa:req REQ-VIRT-002
 // fusa:req REQ-VIRT-005
+// fusa:req REQ-SEC-008 REQ-SEC-009 REQ-SEC-012
 std::error_code Bus::send(Frame frame) {
     try {
         validate_frame(frame);
@@ -77,6 +78,7 @@ std::error_code Bus::send(Frame frame) {
 
 // fusa:req REQ-VIRT-003
 // fusa:req REQ-VIRT-004
+// fusa:req REQ-SEC-007
 std::pair<std::shared_ptr<Chan<Frame>>, std::error_code>
 Bus::subscribe(std::vector<Filter> filters,
                std::vector<relay::SubscriberOption> opts)

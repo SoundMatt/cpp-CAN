@@ -51,6 +51,7 @@ Conn::create(std::shared_ptr<can::IBus> bus, Config cfg) {
 // ── Send ──────────────────────────────────────────────────────────────────────
 
 // fusa:req REQ-ISOTP-005 through REQ-ISOTP-008
+// fusa:req REQ-SEC-010
 std::error_code Conn::send(const std::vector<uint8_t>& payload) {
     if (payload.empty())
         return std::make_error_code(std::errc::invalid_argument);
@@ -123,6 +124,7 @@ std::error_code Conn::send_multi_frame(const std::vector<uint8_t>& payload) {
 // ── Recv ──────────────────────────────────────────────────────────────────────
 
 // fusa:req REQ-ISOTP-009 through REQ-ISOTP-013
+// fusa:req REQ-SEC-011
 std::pair<std::vector<uint8_t>, std::error_code>
 Conn::recv(std::chrono::milliseconds timeout) {
     auto opt_frame = rx_ch_->recv();  // TODO: add timeout to Chan

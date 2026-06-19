@@ -593,5 +593,110 @@
     "text": "parse_protocol() shall map a protocol name (case-insensitive) to its Protocol constant and throw on unknown names.",
     "category": "functional",
     "criticality": "medium"
+  },
+  {
+    "id": "REQ-SEC-001",
+    "title": "Frame ID bounds validation",
+    "text": "The system shall reject any CAN frame whose arbitration ID exceeds the maximum for its addressing mode (0x7FF for standard, 0x1FFFFFFF for extended) before the frame is admitted to any bus or processing path.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-002",
+    "title": "Payload length validation",
+    "text": "The system shall reject any CAN frame whose data length exceeds the maximum for its frame type (8 bytes for standard CAN, 64 bytes for CAN FD) before the frame is transmitted or delivered.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-003",
+    "title": "RTR+FD mutual exclusion",
+    "text": "The system shall reject any frame with both RTR and FD flags set, as this combination is undefined and could be used to confuse frame parsers.",
+    "category": "security",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-SEC-004",
+    "title": "E2E payload integrity",
+    "text": "The E2E Protector shall prepend a CRC-16/CCITT-FALSE integrity header so that any single-bit or burst corruption of the protected payload is detectable by the receiver.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-005",
+    "title": "E2E CRC rejection",
+    "text": "The E2E Receiver shall reject any frame whose computed CRC does not match the header CRC, returning E2EError(CRCMismatch), and shall not deliver the payload to the application.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-006",
+    "title": "E2E replay / reorder detection",
+    "text": "The E2E Receiver shall detect replayed or reordered frames by verifying that each incoming sequence counter is exactly lastSeq+1, returning E2EError(SequenceGap) on violation.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-007",
+    "title": "Subscription allowlist filtering",
+    "text": "IBus::subscribe() shall accept a non-empty filter list; when provided, only frames whose ID satisfies at least one filter's (id & mask) == (filter.id & mask) predicate shall be delivered to that subscriber.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-008",
+    "title": "Bus flooding — channel depth cap",
+    "text": "Each subscriber channel shall have a bounded capacity; the bus shall never allocate unbounded memory in response to a high frame rate, regardless of how many frames are produced.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-009",
+    "title": "Bus flooding — subscriber isolation",
+    "text": "A slow or full subscriber using DropNewest or DropOldest back-pressure shall not delay or block frame delivery to other subscribers.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-010",
+    "title": "ISO-TP oversized payload rejection",
+    "text": "The ISO-TP transport shall reject any send() request for a payload exceeding 4095 bytes, returning ErrPayloadTooLarge, preventing integer-overflow in frame-count calculations.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-011",
+    "title": "ISO-TP sequence integrity",
+    "text": "The ISO-TP receiver shall verify the consecutive-frame sequence number on each CF and return an error on mismatch, preventing partial-payload delivery from interleaved or injected frames.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-012",
+    "title": "Closed-bus send rejection",
+    "text": "Any attempt to send a frame on a closed bus shall return ErrClosed and shall not access subscriber state, preventing use-after-free on shutdown.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-013",
+    "title": "Non-blocking channel try_send",
+    "text": "Chan<T>::try_send() shall return immediately with SendResult::Full when the channel is at capacity, without blocking or allocating memory, preventing a producer from being held by a slow consumer.",
+    "category": "security",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-SEC-014",
+    "title": "E2E header minimum length check",
+    "text": "The E2E Receiver shall reject any buffer shorter than the 10-byte header with E2EError(HeaderTooShort), preventing out-of-bounds reads on truncated or injected frames.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-015",
+    "title": "DBC unknown message safety",
+    "text": "DB::decode() shall return an empty map for an unrecognised message ID rather than asserting or accessing uninitialised state, preventing information disclosure from unknown frame IDs.",
+    "category": "security",
+    "criticality": "medium"
   }
 ]

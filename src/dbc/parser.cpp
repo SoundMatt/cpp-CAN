@@ -11,6 +11,7 @@
 #include <string>
 
 // fusa:req REQ-DBC-001 through REQ-DBC-007
+// fusa:req REQ-SEC-015
 
 namespace can::dbc {
 

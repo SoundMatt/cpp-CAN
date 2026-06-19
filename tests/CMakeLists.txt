@@ -7,6 +7,7 @@ add_executable(cppcan_tests
     test_j1939.cpp
     test_safety.cpp
     test_dbc.cpp
+    test_security.cpp
 )
 
 target_link_libraries(cppcan_tests
