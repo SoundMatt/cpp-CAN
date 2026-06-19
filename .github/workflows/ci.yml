@@ -108,11 +108,52 @@ jobs:
             '*/tests/*' '*/catch2/*' '*/FetchContent/*' \
             --output-file coverage.info
 
+      - name: Enforce 80% line coverage gate
+        run: |
+          COVERAGE=$(lcov --summary coverage.info 2>&1 | awk '/lines/ {gsub(/%/,""); print $2}')
+          echo "Line coverage: ${COVERAGE}%"
+          if ! awk "BEGIN {exit (${COVERAGE} + 0 >= 80) ? 0 : 1}"; then
+            echo "::error::Line coverage ${COVERAGE}% is below the required 80%"
+            exit 1
+          fi
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage.info
+
+  sanitizers:
+    name: ASan + UBSan (IEC 61508 SIL-2 dynamic analysis)
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build gcc-12 g++-12
+
+      - name: Configure (ASan + UBSan)
+        env:
+          CC: gcc-12
+          CXX: g++-12
+        run: |
+          cmake -B build-san \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -O1" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
+            -G Ninja
+
+      - name: Build
+        run: cmake --build build-san --parallel
+
+      - name: Test with sanitizers
+        env:
+          ASAN_OPTIONS: "halt_on_error=1:detect_stack_use_after_return=1"
+          UBSAN_OPTIONS: "halt_on_error=1:print_stacktrace=1"
+        run: ctest --test-dir build-san --output-on-failure -j1
 
   fusa-asil-b:
     name: cpp-FuSa ASIL-B qualification
