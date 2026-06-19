@@ -2,6 +2,27 @@
 
 All notable changes to cpp-CAN are documented here.
 
+## [0.1.6] — 2026-06-19
+
+### Fixed
+- `version --format json`: added `protocol` and `protocol_int` fields (RELAY spec §12.1 v1.10); absence generated a WARN under `relay conform --strict` that escalates to FAIL in v1.10
+- `capabilities`: added `protocol` and `protocol_int` fields (§12.2); normalised features to spec-defined CAN values (`fd`, `isotp`, `j1939`, `dbc`, `e2e`)
+- `status`: added `protocol` field (§12.3)
+- `convert`: `version` in relay.Message output was `{0,2,0}` — now correctly `{0,0,0}` (zero value per §4.1 golden vectors); would fail `relay interop` against the reference implementation
+- `message_to_json`: `seq` now omitted when zero (matches Go's `omitempty` semantics per §4.1)
+- `message_to_json`: `meta` now omitted when empty (matches Go's `omitempty` semantics per §4.1)
+- `relay interop`: CAN XL frame (`can-xl-frame.json`) now passes — `Frame` extended with `esi`, `xl`, `sdt`, `vcid`, `af`, `sec` fields; `to_message` / `from_message` / `parse_frame_json` updated to handle them
+
+### Added
+- `relay interop --protocol CAN` CI gate (RELAY §20 Continuous Conformance)
+- CAN XL fields on `Frame`: `esi` (Error State Indicator), `xl` (XL flag), `sdt` (SDU Type), `vcid` (Virtual CAN ID), `af` (Acceptance Field), `sec` (Simple Extended Content); `kCANXLMaxDataLen = 2048` constant (RELAY §15.1 / ISO 11898-1:2024)
+- 13 new tests: XL frame validation, `to_message`/`from_message` round-trips, `parse_frame_json` XL fields, `message_to_json` conditional XL meta
+
+### Changed
+- `features` list normalised to spec-defined CAN values: `fd`, `isotp`, `j1939`, `dbc`, `e2e` (removed non-spec `convert`, `validate`)
+
+- Total: 119 requirements, 163 test cases
+
 ## [0.1.5] — 2026-06-19
 
 ### Fixed

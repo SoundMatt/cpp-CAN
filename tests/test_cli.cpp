@@ -17,15 +17,19 @@ TEST_CASE("version_json matches RELAY spec 12.1 schema", "[cli][REQ-CLI-001]") {
     std::string j = cli::version_json();
     CHECK(j.find("\"spec_version\":\"0.2\"") != std::string::npos);
     CHECK(j.find("\"tool\":\"cpp-CAN\"")     != std::string::npos);
+    CHECK(j.find("\"protocol\":\"CAN\"")     != std::string::npos);
+    CHECK(j.find("\"protocol_int\":1")       != std::string::npos);
     CHECK(j.find("\"language\":\"cpp\"")     != std::string::npos);
     CHECK(j.find("\"runtime\":\"c++17\"")    != std::string::npos);
-    CHECK(j.find("\"version\":\"0.1.5\"")    != std::string::npos);
+    CHECK(j.find("\"version\":\"0.1.6\"")    != std::string::npos);
 }
 
 TEST_CASE("capabilities_json matches RELAY spec 12.2 schema", "[cli][REQ-CLI-002]") {
     std::string j = cli::capabilities_json();
     CHECK(j.find("\"spec_version\":\"0.2\"") != std::string::npos);
     CHECK(j.find("\"kind\":\"capabilities\"") != std::string::npos);
+    CHECK(j.find("\"protocol\":\"CAN\"")     != std::string::npos);
+    CHECK(j.find("\"protocol_int\":1")       != std::string::npos);
     CHECK(j.find("\"commands\"")            != std::string::npos);
     CHECK(j.find("\"transports\"")           != std::string::npos);
     CHECK(j.find("\"interfaces\"")           != std::string::npos);
@@ -150,7 +154,21 @@ TEST_CASE("message_to_json: zeroed timestamp", "[cli][REQ-CLI-005]") {
     auto msg = can::to_message(f);
     msg.version = {0, 2, 0}; msg.timestamp = {}; msg.seq = 0;
 
-    CHECK(message_to_json(msg).find("1970-01-01T00:00:00Z") != std::string::npos);
+    std::string j = message_to_json(msg);
+    CHECK(j.find("1970-01-01T00:00:00Z") != std::string::npos);
+    CHECK(j.find("\"seq\"") == std::string::npos);
+}
+
+TEST_CASE("message_to_json: seq omitted when zero, present when nonzero", "[cli][REQ-CLI-005]") {
+    can::Frame f{0x1, false, false, false, false, {}};
+    auto msg = can::to_message(f);
+    msg.version = {}; msg.timestamp = {};
+
+    msg.seq = 0;
+    CHECK(message_to_json(msg).find("\"seq\"") == std::string::npos);
+
+    msg.seq = 42;
+    CHECK(message_to_json(msg).find("\"seq\":42") != std::string::npos);
 }
 
 TEST_CASE("message_to_json: meta fields are sorted", "[cli][REQ-CLI-005]") {
@@ -166,4 +184,48 @@ TEST_CASE("message_to_json: meta fields are sorted", "[cli][REQ-CLI-005]") {
     CHECK(brs < ext);
     CHECK(ext < fd);
     CHECK(fd  < rtr);
+}
+
+TEST_CASE("parse_frame_json: CAN XL fields", "[cli][REQ-CLI-004]") {
+    auto f = parse_frame_json(
+        R"({"id":291,"xl":true,"esi":true,"sdt":5,"vcid":2,"af":51966,"sec":true,"data":"3q2+7w=="})");
+    CHECK(f.id   == 291u);
+    CHECK(f.xl   == true);
+    CHECK(f.esi  == true);
+    CHECK(f.sdt  == 5);
+    CHECK(f.vcid == 2);
+    CHECK(f.af   == 51966u);
+    CHECK(f.sec  == true);
+    REQUIRE(f.data.size() == 4);
+    CHECK(f.data[0] == 0xDE);
+    CHECK(f.data[3] == 0xEF);
+}
+
+TEST_CASE("message_to_json: CAN XL meta fields emitted conditionally", "[cli][REQ-CLI-005]") {
+    can::Frame f{};
+    f.id = 291; f.xl = true; f.esi = true;
+    f.sdt = 5; f.vcid = 2; f.af = 51966; f.sec = true;
+    f.data = {0xDE, 0xAD, 0xBE, 0xEF};
+    auto msg = can::to_message(f);
+    msg.timestamp = {}; msg.seq = 0;
+    std::string j = message_to_json(msg);
+    CHECK(j.find("\"can.xl\":\"true\"")    != std::string::npos);
+    CHECK(j.find("\"can.esi\":\"true\"")   != std::string::npos);
+    CHECK(j.find("\"can.sdt\":\"5\"")      != std::string::npos);
+    CHECK(j.find("\"can.vcid\":\"2\"")     != std::string::npos);
+    CHECK(j.find("\"can.af\":\"51966\"")   != std::string::npos);
+    CHECK(j.find("\"can.sec\":\"true\"")   != std::string::npos);
+}
+
+TEST_CASE("message_to_json: XL meta absent when zero/false", "[cli][REQ-CLI-005]") {
+    can::Frame f{0x1, false, false, false, false, {1}};
+    auto msg = can::to_message(f);
+    msg.timestamp = {}; msg.seq = 0;
+    std::string j = message_to_json(msg);
+    CHECK(j.find("can.xl")   == std::string::npos);
+    CHECK(j.find("can.esi")  == std::string::npos);
+    CHECK(j.find("can.sdt")  == std::string::npos);
+    CHECK(j.find("can.vcid") == std::string::npos);
+    CHECK(j.find("can.af")   == std::string::npos);
+    CHECK(j.find("can.sec")  == std::string::npos);
 }

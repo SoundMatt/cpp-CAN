@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// fusa:test REQ-CAN-001 REQ-CAN-001B REQ-CAN-001C REQ-CAN-002 REQ-CAN-003 REQ-CAN-004 REQ-CAN-005 REQ-CAN-006 REQ-CAN-008 REQ-CAN-009 REQ-CAN-010 REQ-CAN-011 REQ-CAN-012 REQ-CAN-013 REQ-CAN-014
+// fusa:test REQ-CAN-001 REQ-CAN-001B REQ-CAN-001C REQ-CAN-002 REQ-CAN-003 REQ-CAN-004 REQ-CAN-005 REQ-CAN-006 REQ-CAN-007 REQ-CAN-008 REQ-CAN-009 REQ-CAN-010 REQ-CAN-011 REQ-CAN-012 REQ-CAN-013 REQ-CAN-014 REQ-CAN-015
 
 #include <can/can.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -65,6 +65,128 @@ TEST_CASE("validate_frame: FD data too long", "[can][REQ-CAN-011]") {
 TEST_CASE("validate_frame: BRS without FD is invalid", "[can][REQ-CAN-014]") {
     REQUIRE_THROWS_AS(validate_frame(Frame{0x100, false, false, false, true, {1}}),
                       ErrInvalidFrame);
+}
+
+TEST_CASE("validate_frame: valid CAN XL frame", "[can][REQ-CAN-009]") {
+    Frame xl{};
+    xl.id  = 0x123;
+    xl.xl  = true;
+    xl.sdt = 5;
+    xl.data = std::vector<uint8_t>(64, 0xAB);
+    REQUIRE_NOTHROW(validate_frame(xl));
+}
+
+TEST_CASE("validate_frame: FD and XL mutually exclusive", "[can][REQ-CAN-009]") {
+    Frame f{};
+    f.fd = true; f.xl = true;
+    f.data = {1};
+    REQUIRE_THROWS_AS(validate_frame(f), ErrInvalidFrame);
+}
+
+TEST_CASE("validate_frame: XL with extended ID is invalid", "[can][REQ-CAN-009]") {
+    Frame f{};
+    f.xl = true; f.ext = true;
+    f.data = {1};
+    REQUIRE_THROWS_AS(validate_frame(f), ErrInvalidFrame);
+}
+
+TEST_CASE("validate_frame: XL with RTR is invalid", "[can][REQ-CAN-009]") {
+    Frame f{};
+    f.xl = true; f.rtr = true;
+    f.data = {1};
+    REQUIRE_THROWS_AS(validate_frame(f), ErrInvalidFrame);
+}
+
+TEST_CASE("validate_frame: XL with BRS is invalid", "[can][REQ-CAN-009]") {
+    Frame f{};
+    f.xl = true; f.brs = true;
+    f.data = {1};
+    REQUIRE_THROWS_AS(validate_frame(f), ErrInvalidFrame);
+}
+
+TEST_CASE("validate_frame: XL priority ID exceeds 11 bits", "[can][REQ-CAN-009]") {
+    Frame f{};
+    f.id = 0x800; f.xl = true;
+    f.data = {1};
+    REQUIRE_THROWS_AS(validate_frame(f), ErrInvalidFrame);
+}
+
+TEST_CASE("validate_frame: XL empty data is invalid", "[can][REQ-CAN-009]") {
+    Frame f{};
+    f.xl = true; f.data = {};
+    REQUIRE_THROWS_AS(validate_frame(f), ErrInvalidFrame);
+}
+
+TEST_CASE("validate_frame: XL data exceeds 2048 bytes", "[can][REQ-CAN-009]") {
+    Frame f{};
+    f.xl = true; f.data = std::vector<uint8_t>(2049, 0);
+    REQUIRE_THROWS_AS(validate_frame(f), ErrInvalidFrame);
+}
+
+TEST_CASE("validate_frame: ESI without FD is invalid", "[can][REQ-CAN-014]") {
+    Frame f{};
+    f.id = 0x100; f.esi = true;
+    f.data = {1};
+    REQUIRE_THROWS_AS(validate_frame(f), ErrInvalidFrame);
+}
+
+// ── Frame XL fields ── REQ-CAN-001C ──────────────────────────────────────────
+
+TEST_CASE("Frame has CAN XL fields", "[can][REQ-CAN-001C]") {
+    Frame f{};
+    f.xl = true; f.sdt = 5; f.vcid = 2; f.af = 0xCAFE; f.sec = true; f.esi = true;
+    CHECK(f.xl   == true);
+    CHECK(f.sdt  == 5);
+    CHECK(f.vcid == 2);
+    CHECK(f.af   == 0xCAFEu);
+    CHECK(f.sec  == true);
+    CHECK(f.esi  == true);
+}
+
+// ── to_message / from_message round-trip ── REQ-CAN-007 REQ-CAN-015 ──────────
+
+TEST_CASE("to_message / from_message: standard frame round-trip", "[can][REQ-CAN-015]") {
+    Frame orig{0x123, true, false, false, false, {0xDE, 0xAD}};
+    auto msg = to_message(orig);
+    CHECK(msg.meta.at("can.ext") == "true");
+    CHECK(msg.meta.at("can.fd")  == "false");
+    auto f2 = from_message(msg);
+    CHECK(f2.id   == 0x123u);
+    CHECK(f2.ext  == true);
+    CHECK(f2.data == std::vector<uint8_t>{0xDE, 0xAD});
+}
+
+TEST_CASE("to_message / from_message: CAN XL frame round-trip", "[can][REQ-CAN-015]") {
+    Frame orig{};
+    orig.id = 0x123; orig.xl = true; orig.esi = true;
+    orig.sdt = 5; orig.vcid = 2; orig.af = 0xCAFE; orig.sec = true;
+    orig.data = {0xDE, 0xAD, 0xBE, 0xEF};
+    auto msg = to_message(orig);
+    CHECK(msg.meta.at("can.xl")   == "true");
+    CHECK(msg.meta.at("can.esi")  == "true");
+    CHECK(msg.meta.at("can.sdt")  == "5");
+    CHECK(msg.meta.at("can.vcid") == "2");
+    CHECK(msg.meta.at("can.af")   == "51966");
+    CHECK(msg.meta.at("can.sec")  == "true");
+    auto f2 = from_message(msg);
+    CHECK(f2.xl   == true);
+    CHECK(f2.esi  == true);
+    CHECK(f2.sdt  == 5);
+    CHECK(f2.vcid == 2);
+    CHECK(f2.af   == 0xCAFEu);
+    CHECK(f2.sec  == true);
+    CHECK(f2.data == std::vector<uint8_t>{0xDE, 0xAD, 0xBE, 0xEF});
+}
+
+TEST_CASE("to_message: XL fields absent when zero/false", "[can][REQ-CAN-015]") {
+    Frame f{0x100, false, false, false, false, {1}};
+    auto msg = to_message(f);
+    CHECK(msg.meta.find("can.xl")   == msg.meta.end());
+    CHECK(msg.meta.find("can.esi")  == msg.meta.end());
+    CHECK(msg.meta.find("can.sdt")  == msg.meta.end());
+    CHECK(msg.meta.find("can.vcid") == msg.meta.end());
+    CHECK(msg.meta.find("can.af")   == msg.meta.end());
+    CHECK(msg.meta.find("can.sec")  == msg.meta.end());
 }
 
 // ── Filter::matches ───────────────────────────────────────────────────────────

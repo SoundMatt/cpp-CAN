@@ -49,9 +49,7 @@ static int cmd_convert(const std::string& protocol) {
     }
 
     auto msg      = can::to_message(f);
-    msg.version   = {0, 2, 0};
     msg.timestamp = {};
-    msg.seq       = 0;
 
     std::cout << cli::message_to_json(msg) << "\n";
     return 0;

@@ -132,11 +132,18 @@ inline can::Frame parse_frame_json(const std::string& json) {
     can::Frame f{};
     if (!detail::extract_u32(json, "id", f.id))
         throw std::runtime_error("ErrInvalidInput: missing or invalid 'id'");
-    detail::extract_bool(json, "ext", f.ext);
-    detail::extract_bool(json, "rtr", f.rtr);
-    detail::extract_bool(json, "fd",  f.fd);
-    detail::extract_bool(json, "brs", f.brs);
+    detail::extract_bool(json, "ext",  f.ext);
+    detail::extract_bool(json, "rtr",  f.rtr);
+    detail::extract_bool(json, "fd",   f.fd);
+    detail::extract_bool(json, "brs",  f.brs);
     detail::extract_bytes(json, "data", f.data);
+    detail::extract_bool(json, "esi",  f.esi);
+    detail::extract_bool(json, "xl",   f.xl);
+    detail::extract_bool(json, "sec",  f.sec);
+    uint32_t tmp{};
+    if (detail::extract_u32(json, "sdt",  tmp)) f.sdt  = static_cast<uint8_t>(tmp);
+    if (detail::extract_u32(json, "vcid", tmp)) f.vcid = static_cast<uint8_t>(tmp);
+    if (detail::extract_u32(json, "af",   tmp)) f.af   = tmp;
     return f;
 }
 
@@ -150,16 +157,18 @@ inline std::string message_to_json(const relay::Message& m) {
       << ",\"patch\":"             << m.version.patch << "},";
     o << "\"id\":\"" << m.id << "\",";
     o << "\"payload\":\"" << detail::base64_encode(m.payload) << "\",";
-    o << "\"timestamp\":\"1970-01-01T00:00:00Z\",";
-    o << "\"seq\":" << m.seq << ",";
-    o << "\"meta\":{";
-    std::vector<std::pair<std::string,std::string>> sorted(m.meta.begin(), m.meta.end());
-    std::sort(sorted.begin(), sorted.end());
-    for (std::size_t i = 0; i < sorted.size(); ++i) {
-        if (i) o << ",";
-        o << "\"" << sorted[i].first << "\":\"" << sorted[i].second << "\"";
+    o << "\"timestamp\":\"1970-01-01T00:00:00Z\"";
+    if (m.seq != 0) o << ",\"seq\":" << m.seq;
+    if (!m.meta.empty()) {
+        o << ",\"meta\":{";
+        std::vector<std::pair<std::string,std::string>> sorted(m.meta.begin(), m.meta.end());
+        std::sort(sorted.begin(), sorted.end());
+        for (std::size_t i = 0; i < sorted.size(); ++i) {
+            if (i) o << ",";
+            o << "\"" << sorted[i].first << "\":\"" << sorted[i].second << "\"";
+        }
+        o << "}";
     }
-    o << "}";
     o << "}";
     return o.str();
 }
@@ -167,9 +176,11 @@ inline std::string message_to_json(const relay::Message& m) {
 // fusa:req REQ-CLI-001
 inline std::string version_json() {
     return "{"
-           "\"spec_version\":\"0.2\","
            "\"tool\":\"cpp-CAN\","
-           "\"version\":\"0.1.5\","
+           "\"protocol\":\"CAN\","
+           "\"protocol_int\":1,"
+           "\"version\":\"0.1.6\","
+           "\"spec_version\":\"0.2\","
            "\"language\":\"cpp\","
            "\"runtime\":\"c++17\""
            "}";
@@ -178,15 +189,17 @@ inline std::string version_json() {
 // fusa:req REQ-CLI-002
 inline std::string capabilities_json() {
     return "{"
-           "\"spec_version\":\"0.2\","
-           "\"tool\":\"cpp-CAN\","
-           "\"version\":\"0.1.5\","
            "\"kind\":\"capabilities\","
+           "\"tool\":\"cpp-CAN\","
+           "\"protocol\":\"CAN\","
+           "\"protocol_int\":1,"
+           "\"version\":\"0.1.6\","
+           "\"spec_version\":\"0.2\","
            "\"commands\":[\"version\",\"capabilities\",\"status\",\"convert\"],"
            "\"transports\":[\"CAN\"],"
+           "\"features\":[\"fd\",\"isotp\",\"j1939\",\"dbc\",\"e2e\"],"
            "\"interfaces\":[\"IBus\",\"INode\",\"ICaller\"],"
            "\"optional_interfaces\":[\"ILoaningBus\",\"IHealthProvider\",\"IMetricsProvider\",\"IDrainer\"],"
-           "\"features\":[\"convert\",\"validate\",\"isotp\",\"j1939\",\"dbc\",\"e2e\"],"
            "\"adapt\":true"
            "}";
 }
@@ -194,8 +207,9 @@ inline std::string capabilities_json() {
 // fusa:req REQ-CLI-003
 inline std::string status_json() {
     return "{"
+           "\"protocol\":\"CAN\","
            "\"tool\":\"cpp-CAN\","
-           "\"version\":\"0.1.5\","
+           "\"version\":\"0.1.6\","
            "\"healthy\":true,"
            "\"connected\":false,"
            "\"endpoint\":\"\","
