@@ -180,7 +180,7 @@ inline std::string version_json() {
            "\"protocol\":\"CAN\","
            "\"protocol_int\":1,"
            "\"version\":\"0.1.6\","
-           "\"spec_version\":\"0.2\","
+           "\"spec_version\":\"1.10\","
            "\"language\":\"cpp\","
            "\"runtime\":\"c++17\""
            "}";
@@ -194,7 +194,7 @@ inline std::string capabilities_json() {
            "\"protocol\":\"CAN\","
            "\"protocol_int\":1,"
            "\"version\":\"0.1.6\","
-           "\"spec_version\":\"0.2\","
+           "\"spec_version\":\"1.10\","
            "\"commands\":[\"version\",\"capabilities\",\"status\",\"convert\"],"
            "\"transports\":[\"CAN\"],"
            "\"features\":[\"fd\",\"isotp\",\"j1939\",\"dbc\",\"e2e\"],"
