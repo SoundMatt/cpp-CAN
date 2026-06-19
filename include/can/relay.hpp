@@ -25,12 +25,12 @@ namespace relay {
 
 // ── Spec version ─────────────────────────────────────────────────────────────
 
-// REQ-RELAY-020
+// fusa:req REQ-RELAY-020
 inline constexpr const char* kSpecVersion = "0.2";
 
 // ── Protocol ─────────────────────────────────────────────────────────────────
 
-// REQ-RELAY-001, REQ-RELAY-002
+// fusa:req REQ-RELAY-001 REQ-RELAY-002
 enum class Protocol : int {
     CAN    = 1,
     DDS    = 2,
@@ -40,16 +40,16 @@ enum class Protocol : int {
     SOMEIP = 6,
 };
 
-// REQ-RELAY-003
+// fusa:req REQ-RELAY-003
 std::string to_string(Protocol p);
 
-// REQ-RELAY-059
+// fusa:req REQ-RELAY-059
 Protocol    parse_protocol(std::string_view s);   // throws std::invalid_argument if unknown
 bool        try_parse_protocol(std::string_view s, Protocol& out) noexcept;
 
 // ── Version ───────────────────────────────────────────────────────────────────
 
-// REQ-RELAY-004, REQ-RELAY-005
+// fusa:req REQ-RELAY-004 REQ-RELAY-005
 struct Version {
     int major{};
     int minor{};
@@ -63,7 +63,7 @@ struct Version {
 
 // ── Message ───────────────────────────────────────────────────────────────────
 
-// REQ-RELAY-006, REQ-RELAY-007
+// fusa:req REQ-RELAY-006 REQ-RELAY-007
 struct Message {
     Protocol  protocol{};
     Version   version{};
@@ -76,7 +76,7 @@ struct Message {
 
 // ── Error codes ───────────────────────────────────────────────────────────────
 
-// REQ-RELAY-008 through REQ-RELAY-012
+// fusa:req REQ-RELAY-008 REQ-RELAY-009 REQ-RELAY-010 REQ-RELAY-011 REQ-RELAY-012
 enum class Errc : int {
     closed            = 1,
     not_connected     = 2,
@@ -84,6 +84,7 @@ enum class Errc : int {
     payload_too_large = 4,
 };
 
+// fusa:req REQ-RELAY-021
 const std::error_category& error_category() noexcept;
 std::error_code            make_error_code(Errc e) noexcept;
 
@@ -95,7 +96,7 @@ inline std::error_code ErrPayloadTooLarge() noexcept { return make_error_code(Er
 
 // ── Back-pressure ─────────────────────────────────────────────────────────────
 
-// REQ-RELAY-015
+// fusa:req REQ-RELAY-015
 enum class BackPressurePolicy {
     DropNewest = 0,  // discard the arriving sample when full
     DropOldest = 1,  // evict the oldest buffered sample
@@ -104,22 +105,24 @@ enum class BackPressurePolicy {
 
 // ── Subscriber options ────────────────────────────────────────────────────────
 
-// REQ-RELAY-016
+// fusa:req REQ-RELAY-016
 struct SubscriberConfig {
     int                chan_depth{};                                    // 0 → use impl default
     BackPressurePolicy back_pressure{BackPressurePolicy::DropNewest};
     uint32_t           event_id{};      // SOME/IP event group
     std::string        topic_name;      // DDS topic
 
+    // fusa:req REQ-RELAY-019
     int effective_depth(int default_depth) const noexcept {
         return chan_depth > 0 ? chan_depth : default_depth;
     }
 };
 
-// REQ-RELAY-017
+// fusa:req REQ-RELAY-017
 using SubscriberOption = std::function<void(SubscriberConfig&)>;
 
-// Option factories — REQ-RELAY-017
+// Option factories — REQ-RELAY-017 REQ-RELAY-051 REQ-RELAY-056
+// fusa:req REQ-RELAY-051 REQ-RELAY-056
 inline SubscriberOption with_channel_depth(int n) {
     return [n](SubscriberConfig& c){ c.chan_depth = n; };
 }
@@ -133,7 +136,7 @@ inline SubscriberOption with_topic(std::string name) {
     return [n = std::move(name)](SubscriberConfig& c){ c.topic_name = n; };
 }
 
-// REQ-RELAY-018
+// fusa:req REQ-RELAY-018
 inline SubscriberConfig apply_options(const std::vector<SubscriberOption>& opts) {
     SubscriberConfig c;
     for (auto& o : opts) o(c);
@@ -142,7 +145,7 @@ inline SubscriberConfig apply_options(const std::vector<SubscriberOption>& opts)
 
 // ── INode ─────────────────────────────────────────────────────────────────────
 
-// REQ-RELAY-013
+// fusa:req REQ-RELAY-013
 class INode {
 public:
     virtual ~INode() = default;
@@ -163,7 +166,7 @@ public:
     virtual std::error_code close() = 0;
 };
 
-// REQ-RELAY-014
+// fusa:req REQ-RELAY-014
 class ICaller : public INode {
 public:
     // Synchronous request/response. Returns ErrTimeout if ctx expires.
@@ -173,7 +176,7 @@ public:
 
 // ── Optional capability interfaces ───────────────────────────────────────────
 
-// REQ-RELAY-023, REQ-RELAY-024, REQ-RELAY-025
+// fusa:req REQ-RELAY-023 REQ-RELAY-024 REQ-RELAY-025
 enum class HealthStatus : int { OK = 0, Degraded = 1, Down = 2 };
 
 struct Health {
@@ -187,7 +190,7 @@ public:
     virtual Health health() const = 0;
 };
 
-// REQ-RELAY-026, REQ-RELAY-027
+// fusa:req REQ-RELAY-026 REQ-RELAY-029
 struct Metrics {
     uint64_t write_count{};
     uint64_t deliver_count{};
@@ -197,13 +200,14 @@ struct Metrics {
     uint64_t error_count{};
 };
 
+// fusa:req REQ-RELAY-027
 class IMetricsProvider {
 public:
     virtual ~IMetricsProvider() = default;
     virtual Metrics metrics() const = 0;
 };
 
-// REQ-RELAY-028
+// fusa:req REQ-RELAY-028
 class IDrainer {
 public:
     virtual ~IDrainer() = default;
@@ -212,7 +216,7 @@ public:
 
 } // namespace relay
 
-// Allow implicit construction of std::error_code from relay::Errc.
+// fusa:req REQ-RELAY-022 — allow implicit construction of std::error_code from relay::Errc.
 namespace std {
 template<>
 struct is_error_code_enum<relay::Errc> : true_type {};

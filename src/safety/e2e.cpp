@@ -73,6 +73,7 @@ static std::vector<uint8_t> build_header(uint16_t data_id, uint16_t source_id,
 
 // fusa:req REQ-SAFETY-005
 // fusa:req REQ-SAFETY-006
+// fusa:req REQ-SEC-004
 std::vector<uint8_t> Protector::protect(const std::vector<uint8_t>& payload) {
     uint32_t seq = seq_++;
     auto hdr = build_header(cfg_.data_id, cfg_.source_id, seq, payload);
@@ -85,7 +86,8 @@ std::vector<uint8_t> Protector::protect(const std::vector<uint8_t>& payload) {
 
 // ── Receiver ─────────────────────────────────────────────────────────────────
 
-// fusa:req REQ-SAFETY-007 through REQ-SAFETY-011
+// fusa:req REQ-SAFETY-007 REQ-SAFETY-008 REQ-SAFETY-009 REQ-SAFETY-010 REQ-SAFETY-011
+// fusa:req REQ-SEC-005 REQ-SEC-006 REQ-SEC-014
 std::vector<uint8_t> Receiver::unwrap(const std::vector<uint8_t>& data) {
     if (data.size() < kHeaderSize)
         throw E2EError(E2EErrorKind::HeaderTooShort, 0,

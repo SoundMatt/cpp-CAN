@@ -3,10 +3,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// fusa:test REQ-CAN-001 through REQ-CAN-014
+// fusa:test REQ-CAN-001 through REQ-CAN-016
 
 #include <can/can.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <type_traits>
 
 using namespace can;
 
@@ -85,6 +86,39 @@ TEST_CASE("Filter::matches: masked range", "[can][REQ-CAN-004]") {
     Filter f{0x100, 0x700};
     CHECK(f.matches(Frame{0x1FF, false, false, false, false, {}}));
     CHECK_FALSE(f.matches(Frame{0x200, false, false, false, false, {}}));
+}
+
+// ── Frame fields ── REQ-CAN-001 REQ-CAN-001B REQ-CAN-001C ────────────────────
+
+TEST_CASE("Frame has ID and ext flag", "[can][REQ-CAN-001]") {
+    Frame f{0x200, true, false, false, false, {}};
+    CHECK(f.id  == 0x200u);
+    CHECK(f.ext == true);
+}
+
+TEST_CASE("Frame has RTR, FD, BRS flags", "[can][REQ-CAN-001B]") {
+    Frame f{0x100, false, true, true, true, {}};
+    CHECK(f.rtr == true);
+    CHECK(f.fd  == true);
+    CHECK(f.brs == true);
+}
+
+TEST_CASE("Frame has data payload vector", "[can][REQ-CAN-001C]") {
+    std::vector<uint8_t> payload = {0xAB, 0xCD};
+    Frame f{0x100, false, false, false, false, payload};
+    CHECK(f.data == payload);
+}
+
+// ── kSpecVersion ─────────────────────────────────────────────────────────────
+
+TEST_CASE("kSpecVersion is 0.2", "[can][REQ-CAN-005]") {
+    CHECK(std::string(kSpecVersion) == "0.2");
+}
+
+// ── IBus interface ────────────────────────────────────────────────────────────
+
+TEST_CASE("IBus is abstract with virtual send/subscribe/close", "[can][REQ-CAN-006]") {
+    CHECK(std::is_abstract<IBus>::value);
 }
 
 // ── max_data_len ──────────────────────────────────────────────────────────────

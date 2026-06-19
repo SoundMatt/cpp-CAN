@@ -35,6 +35,14 @@ TEST_CASE("decode_id: peer-to-peer PGN (PF < 240)", "[j1939][REQ-J1939-002]") {
     CHECK(pgn_is_peer_to_peer(pgn));
 }
 
+TEST_CASE("decode_id: Data Page bit is included in PGN", "[j1939][REQ-J1939-003]") {
+    // DP=1, PF=0xFE, PS=0x00, Src=0x00 → PGN should have DP bit set
+    uint32_t id = (6u << 26) | (1u << 24) | (0xFEu << 16) | (0x00u << 8) | 0x00u;
+    auto [prio, pgn, src] = decode_id(id);
+    // DP bit is encoded as (dp << 17) in PGN, so DP=1 sets bit 17 (0x20000)
+    CHECK((static_cast<uint32_t>(pgn) & 0x20000u) != 0);  // DP bit present
+}
+
 TEST_CASE("encode_id / decode_id round-trip", "[j1939][REQ-J1939-004]") {
     Priority pri = 3;
     PGN      pgn = 0x0FECA;  // broadcast

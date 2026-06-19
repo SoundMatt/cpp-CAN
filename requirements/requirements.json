@@ -1,8 +1,22 @@
 [
   {
     "id": "REQ-CAN-001",
-    "title": "CAN Frame structure",
-    "text": "The system shall define a Frame type carrying: arbitration ID (uint32), extended-ID flag, RTR flag, FD flag, BRS flag, and data payload.",
+    "title": "CAN Frame ID and addressing fields",
+    "text": "The system shall define a Frame type with an arbitration ID (uint32) field and an extended-ID boolean flag.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-001B",
+    "title": "CAN Frame control flags",
+    "text": "The Frame type shall carry RTR, FD, and BRS boolean flags.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-001C",
+    "title": "CAN Frame data payload",
+    "text": "The Frame type shall carry a variable-length byte vector as the data payload.",
     "category": "functional",
     "criticality": "high"
   },
@@ -43,8 +57,22 @@
   },
   {
     "id": "REQ-CAN-007",
-    "title": "RELAY bridge",
-    "text": "The system shall provide to_message(), from_message(), and adapt() to bridge CAN frames with relay::Message and relay::INode.",
+    "title": "RELAY bridge: to_message()",
+    "text": "The system shall provide to_message() to encode a CAN Frame and seq counter as a relay::Message.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-015",
+    "title": "RELAY bridge: from_message()",
+    "text": "The system shall provide from_message() to decode a relay::Message back into a CAN Frame.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-016",
+    "title": "RELAY bridge: adapt()",
+    "text": "The system shall provide adapt() to wrap an IBus as a relay::INode, forwarding send/subscribe/close and assigning monotonically increasing seq numbers.",
     "category": "functional",
     "criticality": "high"
   },
@@ -98,6 +126,20 @@
     "criticality": "medium"
   },
   {
+    "id": "REQ-CAN-017",
+    "title": "LoanedFrame type",
+    "text": "The system shall define a LoanedFrame value type holding a Frame and a release_fn that returns the buffer to a pool on destruction.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-CAN-018",
+    "title": "ILoaningBus interface",
+    "text": "The system shall define ILoaningBus extending IBus with loan() returning a pre-allocated LoanedFrame, and send_loaned() transmitting and releasing that frame.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
     "id": "REQ-VIRT-001",
     "title": "Virtual bus creation",
     "text": "virt::Bus::create() shall return a non-null shared_ptr to an in-process broadcast bus.",
@@ -127,10 +169,38 @@
   },
   {
     "id": "REQ-VIRT-005",
-    "title": "Virtual bus lifecycle",
-    "text": "close() shall be idempotent; send/subscribe after close shall return ErrClosed; subscriber channels shall be closed when the bus closes.",
+    "title": "Virtual bus close is idempotent",
+    "text": "close() shall be idempotent: calling it multiple times shall not panic, deadlock, or return an error.",
     "category": "functional",
     "criticality": "high"
+  },
+  {
+    "id": "REQ-VIRT-006",
+    "title": "Virtual bus closed-state rejection",
+    "text": "send() and subscribe() called on a closed bus shall return ErrClosed.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-VIRT-007",
+    "title": "Virtual bus subscriber channel teardown",
+    "text": "All subscriber channels shall be closed when the bus is closed, unblocking any blocked recv() callers.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-VIRT-008",
+    "title": "Virtual bus zero-copy loan",
+    "text": "virt::Bus shall implement ILoaningBus: loan() shall return a pre-allocated LoanedFrame and send_loaned() shall transmit and release it.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-VIRT-009",
+    "title": "Virtual bus optional capabilities",
+    "text": "virt::Bus shall implement IHealthProvider (reporting OK when open, Down when closed), IMetricsProvider (tracking write_count, deliver_count, drop_count, bytes_written, bytes_delivered, error_count), and IDrainer (close_with_drain).",
+    "category": "functional",
+    "criticality": "medium"
   },
   {
     "id": "REQ-ISOTP-001",
@@ -532,6 +602,20 @@
     "criticality": "low"
   },
   {
+    "id": "REQ-RELAY-021",
+    "title": "Error category registration",
+    "text": "The system shall provide error_category() returning a singleton std::error_category with a unique name, and make_error_code(Errc) mapping each Errc enumerator to a distinct std::error_code in that category.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-RELAY-022",
+    "title": "Errc is_error_code_enum specialization",
+    "text": "relay::Errc shall specialize std::is_error_code_enum so that relay::Errc values implicitly convert to std::error_code without an explicit make_error_code() call.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
     "id": "REQ-RELAY-023",
     "title": "HealthStatus enum",
     "text": "The system shall define HealthStatus with OK=0, Degraded=1, Down=2.",
@@ -554,8 +638,15 @@
   },
   {
     "id": "REQ-RELAY-026",
-    "title": "Metrics struct",
-    "text": "The system shall define a Metrics struct with write_count, deliver_count, drop_count, bytes_written, bytes_delivered, and error_count.",
+    "title": "Metrics counters: write and deliver",
+    "text": "The system shall define a Metrics struct with write_count and deliver_count fields tracking frame transmission and successful delivery.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-029",
+    "title": "Metrics counters: drop, bytes, and errors",
+    "text": "The Metrics struct shall include drop_count, bytes_written, bytes_delivered, and error_count fields.",
     "category": "functional",
     "criticality": "medium"
   },
@@ -592,6 +683,111 @@
     "title": "parse_protocol()",
     "text": "parse_protocol() shall map a protocol name (case-insensitive) to its Protocol constant and throw on unknown names.",
     "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-SEC-001",
+    "title": "Frame ID bounds validation",
+    "text": "The system shall reject any CAN frame whose arbitration ID exceeds the maximum for its addressing mode (0x7FF for standard, 0x1FFFFFFF for extended) before the frame is admitted to any bus or processing path.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-002",
+    "title": "Payload length validation",
+    "text": "The system shall reject any CAN frame whose data length exceeds the maximum for its frame type (8 bytes for standard CAN, 64 bytes for CAN FD) before the frame is transmitted or delivered.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-003",
+    "title": "RTR+FD mutual exclusion",
+    "text": "The system shall reject any frame with both RTR and FD flags set, as this combination is undefined and could be used to confuse frame parsers.",
+    "category": "security",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-SEC-004",
+    "title": "E2E payload integrity",
+    "text": "The E2E Protector shall prepend a CRC-16/CCITT-FALSE integrity header so that any single-bit or burst corruption of the protected payload is detectable by the receiver.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-005",
+    "title": "E2E CRC rejection",
+    "text": "The E2E Receiver shall reject any frame whose computed CRC does not match the header CRC, returning E2EError(CRCMismatch), and shall not deliver the payload to the application.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-006",
+    "title": "E2E replay / reorder detection",
+    "text": "The E2E Receiver shall detect replayed or reordered frames by verifying that each incoming sequence counter is exactly lastSeq+1, returning E2EError(SequenceGap) on violation.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-007",
+    "title": "Subscription allowlist filtering",
+    "text": "IBus::subscribe() shall accept a non-empty filter list; when provided, only frames whose ID satisfies at least one filter's (id & mask) == (filter.id & mask) predicate shall be delivered to that subscriber.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-008",
+    "title": "Bus flooding — channel depth cap",
+    "text": "Each subscriber channel shall have a bounded capacity; the bus shall never allocate unbounded memory in response to a high frame rate, regardless of how many frames are produced.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-009",
+    "title": "Bus flooding — subscriber isolation",
+    "text": "A slow or full subscriber using DropNewest or DropOldest back-pressure shall not delay or block frame delivery to other subscribers.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-010",
+    "title": "ISO-TP oversized payload rejection",
+    "text": "The ISO-TP transport shall reject any send() request for a payload exceeding 4095 bytes, returning ErrPayloadTooLarge, preventing integer-overflow in frame-count calculations.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-011",
+    "title": "ISO-TP sequence integrity",
+    "text": "The ISO-TP receiver shall verify the consecutive-frame sequence number on each CF and return an error on mismatch, preventing partial-payload delivery from interleaved or injected frames.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-012",
+    "title": "Closed-bus send rejection",
+    "text": "Any attempt to send a frame on a closed bus shall return ErrClosed and shall not access subscriber state, preventing use-after-free on shutdown.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-013",
+    "title": "Non-blocking channel try_send",
+    "text": "Chan<T>::try_send() shall return immediately with SendResult::Full when the channel is at capacity, without blocking or allocating memory, preventing a producer from being held by a slow consumer.",
+    "category": "security",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-SEC-014",
+    "title": "E2E header minimum length check",
+    "text": "The E2E Receiver shall reject any buffer shorter than the 10-byte header with E2EError(HeaderTooShort), preventing out-of-bounds reads on truncated or injected frames.",
+    "category": "security",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SEC-015",
+    "title": "DBC unknown message safety",
+    "text": "DB::decode() shall return an empty map for an unrecognised message ID rather than asserting or accessing uninitialised state, preventing information disclosure from unknown frame IDs.",
+    "category": "security",
     "criticality": "medium"
   }
 ]

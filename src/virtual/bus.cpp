@@ -24,9 +24,8 @@ std::shared_ptr<Bus> Bus::create() {
     return std::shared_ptr<Bus>(new Bus());
 }
 
-// fusa:req REQ-VIRT-001
-// fusa:req REQ-VIRT-002
-// fusa:req REQ-VIRT-005
+// fusa:req REQ-VIRT-001 REQ-VIRT-002 REQ-VIRT-005 REQ-VIRT-006
+// fusa:req REQ-SEC-008 REQ-SEC-009 REQ-SEC-012
 std::error_code Bus::send(Frame frame) {
     try {
         validate_frame(frame);
@@ -75,8 +74,8 @@ std::error_code Bus::send(Frame frame) {
     return {};
 }
 
-// fusa:req REQ-VIRT-003
-// fusa:req REQ-VIRT-004
+// fusa:req REQ-VIRT-003 REQ-VIRT-004 REQ-VIRT-006 REQ-VIRT-007
+// fusa:req REQ-SEC-007
 std::pair<std::shared_ptr<Chan<Frame>>, std::error_code>
 Bus::subscribe(std::vector<Filter> filters,
                std::vector<relay::SubscriberOption> opts)
@@ -101,6 +100,7 @@ std::error_code Bus::close() {
     return {};
 }
 
+// fusa:req REQ-VIRT-008 REQ-CAN-017 REQ-CAN-018
 std::pair<std::unique_ptr<LoanedFrame>, std::error_code> Bus::loan() {
     {
         std::shared_lock<std::shared_mutex> lk(mu_);
@@ -116,12 +116,14 @@ std::error_code Bus::send_loaned(std::unique_ptr<LoanedFrame> f) {
     return err;
 }
 
+// fusa:req REQ-VIRT-009 REQ-RELAY-023 REQ-RELAY-024 REQ-RELAY-025
 Health Bus::health() const {
     std::shared_lock<std::shared_mutex> lk(mu_);
     if (closed_) return {HealthStatus::Down, "bus closed"};
     return {HealthStatus::OK, {}};
 }
 
+// fusa:req REQ-VIRT-009 REQ-RELAY-026 REQ-RELAY-027 REQ-RELAY-029
 Metrics Bus::metrics() const {
     return {
         write_count_.load(),

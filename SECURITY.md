@@ -24,6 +24,21 @@ We will acknowledge receipt within **2 business days** and aim to provide a fix 
 mitigation within **14 calendar days** for critical issues, or **90 days** for lower
 severity findings.
 
+## Cybersecurity Standards
+
+cpp-CAN is developed against the following cybersecurity norms:
+
+| Standard | Scope | Target |
+|----------|-------|--------|
+| **IEC 62443-4-2** | Embedded software component requirements | SL-2 |
+| **ISO/SAE 21434:2021** | Automotive cybersecurity engineering | TARA |
+| **ISO 26262:2018** | Functional safety (road vehicles) | ASIL-B |
+
+The `.fusa-iec62443.json` configuration file declares the SL-2 target and
+wires the `INCIDENT-RESPONSE.md` document into the cpfusa cyber audit chain.
+Cybersecurity requirements are tracked as `REQ-SEC-001` through `REQ-SEC-015`
+in `requirements/requirements.json` with `fusa:req` / `fusa:test` annotations.
+
 ## Security Requirements
 
 cpp-CAN targets deployment in safety-critical environments (automotive ASIL-B,

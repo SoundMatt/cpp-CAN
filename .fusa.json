@@ -1,0 +1,14 @@
+{
+  "asil": "ASIL-B",
+  "configVersion": "1.0",
+  "project": {
+    "name": "cpp-CAN",
+    "version": "0.1.0"
+  },
+  "sourceDirs": [
+    "src",
+    "include"
+  ],
+  "standard": "iso26262",
+  "strict": false
+}

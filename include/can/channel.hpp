@@ -43,7 +43,7 @@ public:
         return true;
     }
 
-    // Non-blocking send. Returns Full when at capacity.
+    // fusa:req REQ-SEC-013
     SendResult try_send(T value) {
         std::lock_guard<std::mutex> lk(mu_);
         if (closed_)               return SendResult::Closed;
