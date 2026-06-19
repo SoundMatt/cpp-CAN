@@ -116,19 +116,40 @@ inline std::string message_to_json(const relay::Message& m) {
 
 // fusa:req REQ-CLI-001
 inline std::string version_json() {
-    return "{\"spec\":\"0.2\",\"name\":\"cpp-CAN\","
-           "\"version\":\"0.1.1\",\"language\":\"C++\",\"protocol\":\"CAN\"}";
+    return "{"
+           "\"spec_version\":\"0.2\","
+           "\"tool\":\"cpp-CAN\","
+           "\"version\":\"0.1.1\","
+           "\"language\":\"cpp\","
+           "\"runtime\":\"c++17\""
+           "}";
 }
 
 // fusa:req REQ-CLI-002
 inline std::string capabilities_json() {
-    return "{\"protocols\":[\"CAN\"],"
-           "\"commands\":[\"version\",\"capabilities\",\"status\",\"convert\"]}";
+    return "{"
+           "\"spec_version\":\"0.2\","
+           "\"tool\":\"cpp-CAN\","
+           "\"version\":\"0.1.1\","
+           "\"kind\":\"library\","
+           "\"transports\":[\"CAN\"],"
+           "\"interfaces\":[\"IBus\",\"INode\",\"ICaller\"],"
+           "\"optional_interfaces\":[\"ILoaningBus\",\"IHealthProvider\",\"IMetricsProvider\",\"IDrainer\"],"
+           "\"features\":[\"convert\",\"validate\",\"isotp\",\"j1939\",\"dbc\",\"e2e\"],"
+           "\"adapt\":true"
+           "}";
 }
 
 // fusa:req REQ-CLI-003
 inline std::string status_json() {
-    return "{\"status\":\"ok\",\"protocol\":\"CAN\"}";
+    return "{"
+           "\"tool\":\"cpp-CAN\","
+           "\"version\":\"0.1.1\","
+           "\"healthy\":true,"
+           "\"connected\":false,"
+           "\"endpoint\":\"\","
+           "\"details\":\"\""
+           "}";
 }
 
 } // namespace cli
