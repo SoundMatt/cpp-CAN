@@ -13,7 +13,7 @@ using namespace cli;
 
 // ── version / capabilities / status ──────────────────────────────────────────
 
-TEST_CASE("version_json matches RELAY §12.1 schema", "[cli][REQ-CLI-001]") {
+TEST_CASE("version_json matches RELAY spec 12.1 schema", "[cli][REQ-CLI-001]") {
     std::string j = cli::version_json();
     CHECK(j.find("\"spec_version\":\"0.2\"") != std::string::npos);
     CHECK(j.find("\"tool\":\"cpp-CAN\"")     != std::string::npos);
@@ -22,7 +22,7 @@ TEST_CASE("version_json matches RELAY §12.1 schema", "[cli][REQ-CLI-001]") {
     CHECK(j.find("\"version\":\"0.1.1\"")    != std::string::npos);
 }
 
-TEST_CASE("capabilities_json matches RELAY §12.2 schema", "[cli][REQ-CLI-002]") {
+TEST_CASE("capabilities_json matches RELAY spec 12.2 schema", "[cli][REQ-CLI-002]") {
     std::string j = cli::capabilities_json();
     CHECK(j.find("\"spec_version\":\"0.2\"") != std::string::npos);
     CHECK(j.find("\"kind\":\"library\"")     != std::string::npos);
@@ -32,7 +32,7 @@ TEST_CASE("capabilities_json matches RELAY §12.2 schema", "[cli][REQ-CLI-002]")
     CHECK(j.find("\"adapt\":true")           != std::string::npos);
 }
 
-TEST_CASE("status_json matches RELAY §12.3 schema", "[cli][REQ-CLI-003]") {
+TEST_CASE("status_json matches RELAY spec 12.3 schema", "[cli][REQ-CLI-003]") {
     std::string j = cli::status_json();
     CHECK(j.find("\"healthy\":true")  != std::string::npos);
     CHECK(j.find("\"connected\"")     != std::string::npos);
