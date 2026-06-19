@@ -25,7 +25,8 @@ TEST_CASE("version_json matches RELAY spec 12.1 schema", "[cli][REQ-CLI-001]") {
 TEST_CASE("capabilities_json matches RELAY spec 12.2 schema", "[cli][REQ-CLI-002]") {
     std::string j = cli::capabilities_json();
     CHECK(j.find("\"spec_version\":\"0.2\"") != std::string::npos);
-    CHECK(j.find("\"kind\":\"library\"")     != std::string::npos);
+    CHECK(j.find("\"kind\":\"capabilities\"") != std::string::npos);
+    CHECK(j.find("\"commands\"")            != std::string::npos);
     CHECK(j.find("\"transports\"")           != std::string::npos);
     CHECK(j.find("\"interfaces\"")           != std::string::npos);
     CHECK(j.find("\"features\"")             != std::string::npos);

@@ -131,7 +131,8 @@ inline std::string capabilities_json() {
            "\"spec_version\":\"0.2\","
            "\"tool\":\"cpp-CAN\","
            "\"version\":\"0.1.1\","
-           "\"kind\":\"library\","
+           "\"kind\":\"capabilities\","
+           "\"commands\":[\"version\",\"capabilities\",\"status\",\"convert\"],"
            "\"transports\":[\"CAN\"],"
            "\"interfaces\":[\"IBus\",\"INode\",\"ICaller\"],"
            "\"optional_interfaces\":[\"ILoaningBus\",\"IHealthProvider\",\"IMetricsProvider\",\"IDrainer\"],"
@@ -148,7 +149,7 @@ inline std::string status_json() {
            "\"healthy\":true,"
            "\"connected\":false,"
            "\"endpoint\":\"\","
-           "\"details\":\"\""
+           "\"details\":{}"
            "}";
 }
 
