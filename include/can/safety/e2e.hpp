@@ -74,7 +74,7 @@ private:
 };
 
 // Receiver validates E2E headers on received payloads.
-// fusa:req REQ-SAFETY-007 through REQ-SAFETY-011
+// fusa:req REQ-SAFETY-007 REQ-SAFETY-008 REQ-SAFETY-009 REQ-SAFETY-010 REQ-SAFETY-011
 class Receiver {
 public:
     explicit Receiver(Config cfg) : cfg_(cfg), last_seq_(0), first_(true) {}

@@ -86,7 +86,7 @@ std::vector<uint8_t> Protector::protect(const std::vector<uint8_t>& payload) {
 
 // ── Receiver ─────────────────────────────────────────────────────────────────
 
-// fusa:req REQ-SAFETY-007 through REQ-SAFETY-011
+// fusa:req REQ-SAFETY-007 REQ-SAFETY-008 REQ-SAFETY-009 REQ-SAFETY-010 REQ-SAFETY-011
 // fusa:req REQ-SEC-005 REQ-SEC-006 REQ-SEC-014
 std::vector<uint8_t> Receiver::unwrap(const std::vector<uint8_t>& data) {
     if (data.size() < kHeaderSize)

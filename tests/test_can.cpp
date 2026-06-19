@@ -7,6 +7,7 @@
 
 #include <can/can.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <type_traits>
 
 using namespace can;
 
@@ -106,6 +107,18 @@ TEST_CASE("Frame has data payload vector", "[can][REQ-CAN-001C]") {
     std::vector<uint8_t> payload = {0xAB, 0xCD};
     Frame f{0x100, false, false, false, false, payload};
     CHECK(f.data == payload);
+}
+
+// ── kSpecVersion ─────────────────────────────────────────────────────────────
+
+TEST_CASE("kSpecVersion is 0.2", "[can][REQ-CAN-005]") {
+    CHECK(std::string(kSpecVersion) == "0.2");
+}
+
+// ── IBus interface ────────────────────────────────────────────────────────────
+
+TEST_CASE("IBus is abstract with virtual send/subscribe/close", "[can][REQ-CAN-006]") {
+    CHECK(std::is_abstract<IBus>::value);
 }
 
 // ── max_data_len ──────────────────────────────────────────────────────────────

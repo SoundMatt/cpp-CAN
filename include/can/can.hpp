@@ -93,7 +93,7 @@ inline uint32_t max_data_len(bool fd) noexcept {
 
 // Validates f against CAN protocol constraints.
 // Throws ErrInvalidFrame if any constraint is violated.
-// fusa:req REQ-CAN-009 through REQ-CAN-014
+// fusa:req REQ-CAN-009 REQ-CAN-010 REQ-CAN-011 REQ-CAN-012 REQ-CAN-013 REQ-CAN-014
 void validate_frame(const Frame& f);
 
 // ── Bus interface ─────────────────────────────────────────────────────────────
