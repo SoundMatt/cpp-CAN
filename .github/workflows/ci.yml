@@ -153,6 +153,9 @@ jobs:
       - name: RELAY conformance gate
         run: relay conform ./build/cli/cpp-can-cli --strict
 
+      - name: RELAY interop gate (§20 Continuous Conformance)
+        run: relay interop --protocol CAN ./build/cli/cpp-can-cli
+
   sanitizers:
     name: ASan + UBSan (IEC 61508 SIL-2 dynamic analysis)
     runs-on: ubuntu-22.04
