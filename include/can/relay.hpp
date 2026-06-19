@@ -189,7 +189,8 @@ public:
     virtual Health health() const = 0;
 };
 
-// REQ-RELAY-026, REQ-RELAY-027
+// REQ-RELAY-026, REQ-RELAY-027, REQ-RELAY-029
+// fusa:req REQ-RELAY-026 REQ-RELAY-029
 struct Metrics {
     uint64_t write_count{};
     uint64_t deliver_count{};

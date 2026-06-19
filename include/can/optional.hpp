@@ -5,6 +5,8 @@
 
 // optional.hpp — Optional capability interfaces for CAN bus implementations.
 // Mirrors can_optional.go from go-CAN.
+//
+// fusa:req REQ-CAN-017 REQ-CAN-018
 
 #pragma once
 

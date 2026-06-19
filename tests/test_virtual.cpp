@@ -3,7 +3,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// fusa:test REQ-VIRT-001 through REQ-VIRT-007
+// fusa:test REQ-VIRT-001 through REQ-VIRT-009
+// fusa:test REQ-CAN-017 REQ-CAN-018
+// fusa:test REQ-RELAY-023 REQ-RELAY-024 REQ-RELAY-025 REQ-RELAY-026 REQ-RELAY-027 REQ-RELAY-028 REQ-RELAY-029
 
 #include <can/virtual/bus.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -122,14 +124,14 @@ TEST_CASE("DropNewest back-pressure drops new frames when full", "[virtual][REQ-
     bus->close();
 }
 
-TEST_CASE("health reports OK when open, Down when closed", "[virtual]") {
+TEST_CASE("health reports OK when open, Down when closed", "[virtual][REQ-VIRT-009][REQ-RELAY-023][REQ-RELAY-024][REQ-RELAY-025]") {
     auto bus = Bus::create();
     CHECK(bus->health().status == HealthStatus::OK);
     bus->close();
     CHECK(bus->health().status == HealthStatus::Down);
 }
 
-TEST_CASE("metrics count sends and deliveries", "[virtual]") {
+TEST_CASE("metrics count sends and deliveries", "[virtual][REQ-VIRT-009][REQ-RELAY-026][REQ-RELAY-027][REQ-RELAY-029]") {
     auto bus = Bus::create();
     auto [ch, err] = bus->subscribe({}, {});
     REQUIRE_FALSE(err);
@@ -144,7 +146,7 @@ TEST_CASE("metrics count sends and deliveries", "[virtual]") {
     bus->close();
 }
 
-TEST_CASE("loan / send_loaned round-trip", "[virtual]") {
+TEST_CASE("loan / send_loaned round-trip", "[virtual][REQ-VIRT-008][REQ-CAN-017][REQ-CAN-018]") {
     auto bus = Bus::create();
     auto [ch, err] = bus->subscribe({}, {});
     REQUIRE_FALSE(err);

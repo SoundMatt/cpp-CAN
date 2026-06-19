@@ -33,6 +33,7 @@ analysis and risk assessment that derives these levels.
 | ID | Document | Location |
 |---|---|---|
 | REQS | Requirements manifest | `requirements/requirements.json` |
+| HARA | Hazard Analysis and Risk Assessment | `HARA.md` |
 | FMEA | Differential FMEA table | `fmea.csv` (CI-generated) |
 | SC | Safety Case | `safety-case.md` (CI-generated) |
 | PROV | Build provenance | `provenance.json` (CI-generated) |

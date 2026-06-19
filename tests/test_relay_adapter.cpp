@@ -37,7 +37,7 @@ TEST_CASE("from_message: round-trip", "[relay_adapter][REQ-CAN-015]") {
     CHECK(got.data == orig.data);
 }
 
-TEST_CASE("from_message: invalid ID throws ErrInvalidFrame", "[relay_adapter]") {
+TEST_CASE("from_message: invalid ID throws ErrInvalidFrame", "[relay_adapter][REQ-CAN-015]") {
     relay::Message msg;
     msg.protocol = relay::Protocol::CAN;
     msg.id       = "not-a-number";
@@ -70,7 +70,7 @@ TEST_CASE("adapt: send/subscribe round-trip with seq numbering", "[relay_adapter
     node->close();
 }
 
-TEST_CASE("adapt: close propagates to bus", "[relay_adapter]") {
+TEST_CASE("adapt: close propagates to bus", "[relay_adapter][REQ-CAN-016]") {
     auto bus  = virt::Bus::create();
     auto node = adapt(bus);
     REQUIRE_FALSE(node->close());

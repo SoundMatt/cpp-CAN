@@ -3,13 +3,24 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// fusa:test REQ-RELAY-001 through REQ-RELAY-028
+// fusa:test REQ-RELAY-001 through REQ-RELAY-029
 // fusa:test REQ-RELAY-051 REQ-RELAY-056 REQ-RELAY-059
 
 #include <can/relay.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 using namespace relay;
+
+// ── Protocol enum ── REQ-RELAY-001 REQ-RELAY-002 ─────────────────────────────
+
+TEST_CASE("Protocol integer type with CAN=1 through SOMEIP=6", "[relay][REQ-RELAY-001][REQ-RELAY-002]") {
+    CHECK(static_cast<int>(Protocol::CAN)    == 1);
+    CHECK(static_cast<int>(Protocol::DDS)    == 2);
+    CHECK(static_cast<int>(Protocol::LIN)    == 3);
+    CHECK(static_cast<int>(Protocol::MQTT)   == 4);
+    CHECK(static_cast<int>(Protocol::RCP)    == 5);
+    CHECK(static_cast<int>(Protocol::SOMEIP) == 6);
+}
 
 // ── Protocol ──────────────────────────────────────────────────────────────────
 
@@ -50,6 +61,18 @@ TEST_CASE("parse_protocol: throws on unknown", "[relay][REQ-RELAY-059]") {
     REQUIRE_THROWS_AS(parse_protocol("BAD"), std::invalid_argument);
 }
 
+// ── Message ── REQ-RELAY-006 REQ-RELAY-007 ───────────────────────────────────
+
+TEST_CASE("Message has required fields with correct defaults", "[relay][REQ-RELAY-006][REQ-RELAY-007]") {
+    Message m;
+    m.protocol = Protocol::CAN;
+    m.id       = "100";
+    m.payload  = {0x01, 0x02};
+    CHECK(m.seq  == 0);
+    CHECK(m.meta.empty());
+    CHECK(m.payload == std::vector<uint8_t>{0x01, 0x02});
+}
+
 // ── Version ───────────────────────────────────────────────────────────────────
 
 TEST_CASE("Version::to_string", "[relay][REQ-RELAY-005]") {
@@ -66,7 +89,13 @@ TEST_CASE("Version equality", "[relay][REQ-RELAY-004]") {
 
 // ── Error codes ───────────────────────────────────────────────────────────────
 
-TEST_CASE("error sentinels are distinct", "[relay][REQ-RELAY-008]") {
+TEST_CASE("ErrNotConnected, ErrTimeout, ErrPayloadTooLarge are defined", "[relay][REQ-RELAY-009][REQ-RELAY-010][REQ-RELAY-011]") {
+    CHECK(ErrNotConnected());
+    CHECK(ErrTimeout());
+    CHECK(ErrPayloadTooLarge());
+}
+
+TEST_CASE("error sentinels are distinct", "[relay][REQ-RELAY-008][REQ-RELAY-012]") {
     CHECK(ErrClosed()          != ErrNotConnected());
     CHECK(ErrClosed()          != ErrTimeout());
     CHECK(ErrClosed()          != ErrPayloadTooLarge());
@@ -89,7 +118,7 @@ TEST_CASE("error code messages are non-empty", "[relay][REQ-RELAY-008]") {
     CHECK_FALSE(ErrPayloadTooLarge().message().empty());
 }
 
-TEST_CASE("ok error_code is false", "[relay]") {
+TEST_CASE("ok error_code is false", "[relay][REQ-RELAY-008]") {
     std::error_code ok{};
     CHECK_FALSE(ok);
     CHECK(ErrClosed());
@@ -117,9 +146,18 @@ TEST_CASE("effective_depth uses default when chan_depth is 0", "[relay][REQ-RELA
     CHECK(cfg.effective_depth(64) == 32);
 }
 
-TEST_CASE("with_back_pressure option", "[relay][REQ-RELAY-017]") {
+TEST_CASE("with_back_pressure option", "[relay][REQ-RELAY-015][REQ-RELAY-017]") {
     auto cfg = apply_options({with_back_pressure(BackPressurePolicy::Block)});
     CHECK(cfg.back_pressure == BackPressurePolicy::Block);
+    CHECK(static_cast<int>(BackPressurePolicy::DropNewest) == 0);
+    CHECK(static_cast<int>(BackPressurePolicy::DropOldest) == 1);
+    CHECK(static_cast<int>(BackPressurePolicy::Block)      == 2);
+}
+
+TEST_CASE("apply_options applies all options to a zero-initialized config", "[relay][REQ-RELAY-018]") {
+    auto cfg = apply_options({with_channel_depth(32), with_back_pressure(BackPressurePolicy::DropOldest)});
+    CHECK(cfg.chan_depth    == 32);
+    CHECK(cfg.back_pressure == BackPressurePolicy::DropOldest);
 }
 
 TEST_CASE("with_event_id option", "[relay][REQ-RELAY-051]") {
@@ -136,6 +174,54 @@ TEST_CASE("with_topic option", "[relay][REQ-RELAY-056]") {
 
 TEST_CASE("kSpecVersion is non-empty", "[relay][REQ-RELAY-020]") {
     CHECK(std::string(kSpecVersion) == "0.2");
+}
+
+// ── Interface type existence ── REQ-RELAY-013 REQ-RELAY-014 ──────────────────
+
+TEST_CASE("INode is a polymorphic abstract type", "[relay][REQ-RELAY-013]") {
+    CHECK(std::is_abstract<INode>::value);
+    CHECK(std::is_polymorphic<INode>::value);
+}
+
+TEST_CASE("ICaller extends INode and is abstract", "[relay][REQ-RELAY-014]") {
+    CHECK(std::is_abstract<ICaller>::value);
+    CHECK((std::is_base_of<INode, ICaller>::value));
+}
+
+// ── Health / Metrics / Drainer types ── REQ-RELAY-023 through REQ-RELAY-029 ──
+
+TEST_CASE("HealthStatus enum values OK=0 Degraded=1 Down=2", "[relay][REQ-RELAY-023]") {
+    CHECK(static_cast<int>(HealthStatus::OK)       == 0);
+    CHECK(static_cast<int>(HealthStatus::Degraded) == 1);
+    CHECK(static_cast<int>(HealthStatus::Down)     == 2);
+}
+
+TEST_CASE("Health struct has status and details fields", "[relay][REQ-RELAY-024]") {
+    Health h{HealthStatus::Degraded, "low memory"};
+    CHECK(h.status  == HealthStatus::Degraded);
+    CHECK(h.details == "low memory");
+}
+
+TEST_CASE("IHealthProvider is a polymorphic abstract type", "[relay][REQ-RELAY-025]") {
+    CHECK(std::is_abstract<IHealthProvider>::value);
+}
+
+TEST_CASE("Metrics struct write and deliver fields exist and default to zero", "[relay][REQ-RELAY-026][REQ-RELAY-029]") {
+    Metrics m{};
+    CHECK(m.write_count     == 0);
+    CHECK(m.deliver_count   == 0);
+    CHECK(m.drop_count      == 0);
+    CHECK(m.bytes_written   == 0);
+    CHECK(m.bytes_delivered == 0);
+    CHECK(m.error_count     == 0);
+}
+
+TEST_CASE("IMetricsProvider is a polymorphic abstract type", "[relay][REQ-RELAY-027]") {
+    CHECK(std::is_abstract<IMetricsProvider>::value);
+}
+
+TEST_CASE("IDrainer is a polymorphic abstract type", "[relay][REQ-RELAY-028]") {
+    CHECK(std::is_abstract<IDrainer>::value);
 }
 
 // ── Error category registration ── REQ-RELAY-021 REQ-RELAY-022 ───────────────

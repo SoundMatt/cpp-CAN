@@ -7,8 +7,37 @@
 
 #include <can/safety/e2e.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <atomic>
+#include <thread>
 
 using namespace can::safety;
+
+TEST_CASE("Config has DataID and SourceID fields", "[safety][REQ-SAFETY-001]") {
+    Config cfg{0xABCD, 0x12};
+    CHECK(cfg.data_id   == 0xABCD);
+    CHECK(cfg.source_id == 0x12);
+}
+
+TEST_CASE("E2E header is exactly 10 bytes", "[safety][REQ-SAFETY-002]") {
+    CHECK(kHeaderSize == 10u);
+}
+
+TEST_CASE("E2EErrorKind values CRCMismatch, SequenceGap, HeaderTooShort defined", "[safety][REQ-SAFETY-003]") {
+    CHECK(E2EErrorKind::CRCMismatch   != E2EErrorKind::SequenceGap);
+    CHECK(E2EErrorKind::SequenceGap   != E2EErrorKind::HeaderTooShort);
+    CHECK(E2EErrorKind::CRCMismatch   != E2EErrorKind::HeaderTooShort);
+}
+
+TEST_CASE("Protector is constructible from Config and starts with seq=0", "[safety][REQ-SAFETY-004]") {
+    Config cfg{0x0001, 0x01};
+    Protector p{cfg};
+    auto frame = p.protect({0x00});
+    uint32_t seq = static_cast<uint32_t>(frame[4])
+                 | static_cast<uint32_t>(frame[5]) << 8
+                 | static_cast<uint32_t>(frame[6]) << 16
+                 | static_cast<uint32_t>(frame[7]) << 24;
+    CHECK(seq == 0);
+}
 
 TEST_CASE("protect and unwrap round-trip", "[safety][REQ-SAFETY-005][REQ-SAFETY-007]") {
     Config cfg{0x0001, 0x0010};
@@ -92,7 +121,33 @@ TEST_CASE("multiple sequential unwraps succeed", "[safety][REQ-SAFETY-010]") {
     }
 }
 
-TEST_CASE("crc16: known vector", "[safety]") {
+TEST_CASE("Receiver::unwrap is thread-safe under concurrent calls", "[safety][REQ-SAFETY-011]") {
+    Config cfg{0x0001, 0x0010};
+    Protector protector{cfg};
+    Receiver  receiver{cfg};
+
+    std::vector<std::vector<uint8_t>> frames;
+    for (int i = 0; i < 20; ++i)
+        frames.push_back(protector.protect({static_cast<uint8_t>(i)}));
+
+    std::atomic<int> ok{0};
+    std::vector<std::thread> threads;
+    // Two threads each unwrap frames in sequence: non-overlapping seq ranges.
+    // Thread 0 unwraps frames 0-9, thread 1 reads separately from a fresh receiver.
+    Receiver r2{cfg};
+    std::vector<std::vector<uint8_t>> frames2;
+    {
+        Protector p2{cfg};
+        for (int i = 0; i < 10; ++i)
+            frames2.push_back(p2.protect({static_cast<uint8_t>(i + 100)}));
+    }
+    threads.emplace_back([&]{ for (auto& f : frames)  { try { receiver.unwrap(f); ++ok; } catch(...){} } });
+    threads.emplace_back([&]{ for (auto& f : frames2) { try { r2.unwrap(f);       ++ok; } catch(...){} } });
+    for (auto& t : threads) t.join();
+    CHECK(ok.load() == 30);
+}
+
+TEST_CASE("crc16: known vector", "[safety][REQ-SAFETY-003]") {
     // "123456789" → 0x29B1 for CRC-16/CCITT-FALSE
     const uint8_t data[] = {'1','2','3','4','5','6','7','8','9'};
     CHECK(crc16(data, 9) == 0x29B1);

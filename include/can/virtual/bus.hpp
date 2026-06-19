@@ -7,7 +7,7 @@
 // Zero OS dependencies; default transport for development and testing.
 // Mirrors go-CAN/virtual package.
 //
-// fusa:req REQ-VIRT-001 through REQ-VIRT-005
+// fusa:req REQ-VIRT-001 through REQ-VIRT-009
 
 #pragma once
 
@@ -25,11 +25,8 @@ namespace can::virt {
 // filters match, including the sender — mirroring real CAN bus behaviour.
 // Multiple threads may call send() and subscribe() concurrently.
 //
-// fusa:req REQ-VIRT-001
-// fusa:req REQ-VIRT-002
-// fusa:req REQ-VIRT-003
-// fusa:req REQ-VIRT-004
-// fusa:req REQ-VIRT-005
+// fusa:req REQ-VIRT-001 REQ-VIRT-002 REQ-VIRT-003 REQ-VIRT-004 REQ-VIRT-005
+// fusa:req REQ-VIRT-006 REQ-VIRT-007 REQ-VIRT-008 REQ-VIRT-009
 class Bus : public ILoaningBus,
             public IHealthProvider,
             public IMetricsProvider,

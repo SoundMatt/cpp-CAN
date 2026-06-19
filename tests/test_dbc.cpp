@@ -39,6 +39,22 @@ TEST_CASE("parse: message and signal counts", "[dbc][REQ-DBC-001][REQ-DBC-004]")
     CHECK(db->messages.at(512).signals.size() == 1);
 }
 
+TEST_CASE("parse: BigEndian signal byte order is supported", "[dbc][REQ-DBC-002]") {
+    const char* be_dbc = R"(
+BO_ 300 BigTest: 8 ECU
+ SG_ Sig1 : 7|8@0+ (1,0) [0|255] "" Vector
+)";
+    std::istringstream ss(be_dbc);
+    auto db = parse(ss);
+    const auto& sig = db->messages.at(300).signals.at("Sig1");
+    CHECK(sig.byte_order == ByteOrder::BigEndian);
+    // Big-endian: start_bit=7, length=8 — byte 0 completely
+    std::vector<uint8_t> data = {0x42, 0, 0, 0, 0, 0, 0, 0};
+    auto vals = db->decode(300, data);
+    CHECK(vals.count("Sig1") == 1);
+    CHECK(std::abs(vals.at("Sig1") - 0x42) < 0.001);
+}
+
 TEST_CASE("parse: signal fields", "[dbc][REQ-DBC-003]") {
     std::istringstream ss(kSimpleDBC);
     auto db = parse(ss);

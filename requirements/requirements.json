@@ -126,6 +126,20 @@
     "criticality": "medium"
   },
   {
+    "id": "REQ-CAN-017",
+    "title": "LoanedFrame type",
+    "text": "The system shall define a LoanedFrame value type holding a Frame and a release_fn that returns the buffer to a pool on destruction.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-CAN-018",
+    "title": "ILoaningBus interface",
+    "text": "The system shall define ILoaningBus extending IBus with loan() returning a pre-allocated LoanedFrame, and send_loaned() transmitting and releasing that frame.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
     "id": "REQ-VIRT-001",
     "title": "Virtual bus creation",
     "text": "virt::Bus::create() shall return a non-null shared_ptr to an in-process broadcast bus.",
@@ -173,6 +187,20 @@
     "text": "All subscriber channels shall be closed when the bus is closed, unblocking any blocked recv() callers.",
     "category": "functional",
     "criticality": "high"
+  },
+  {
+    "id": "REQ-VIRT-008",
+    "title": "Virtual bus zero-copy loan",
+    "text": "virt::Bus shall implement ILoaningBus: loan() shall return a pre-allocated LoanedFrame and send_loaned() shall transmit and release it.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-VIRT-009",
+    "title": "Virtual bus optional capabilities",
+    "text": "virt::Bus shall implement IHealthProvider (reporting OK when open, Down when closed), IMetricsProvider (tracking write_count, deliver_count, drop_count, bytes_written, bytes_delivered, error_count), and IDrainer (close_with_drain).",
+    "category": "functional",
+    "criticality": "medium"
   },
   {
     "id": "REQ-ISOTP-001",
