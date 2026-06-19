@@ -35,7 +35,7 @@ void validate_frame(const Frame& f) {
 
 // ── RELAY bridge: to_message / from_message ───────────────────────────────────
 
-// fusa:req REQ-CAN-007
+// fusa:req REQ-CAN-007 REQ-CAN-015
 relay::Message to_message(const Frame& f) {
     relay::Message m;
     m.protocol  = relay::Protocol::CAN;
@@ -49,7 +49,7 @@ relay::Message to_message(const Frame& f) {
     return m;
 }
 
-// fusa:req REQ-CAN-007
+// fusa:req REQ-CAN-015
 Frame from_message(const relay::Message& m) {
     unsigned long long id_val{};
     try {
@@ -75,7 +75,7 @@ Frame from_message(const relay::Message& m) {
     return f;
 }
 
-// ── RELAY adapter ─────────────────────────────────────────────────────────────
+// ── RELAY adapter ── fusa:req REQ-CAN-016 ────────────────────────────────────
 
 namespace {
 

@@ -1,8 +1,22 @@
 [
   {
     "id": "REQ-CAN-001",
-    "title": "CAN Frame structure",
-    "text": "The system shall define a Frame type carrying: arbitration ID (uint32), extended-ID flag, RTR flag, FD flag, BRS flag, and data payload.",
+    "title": "CAN Frame ID and addressing fields",
+    "text": "The system shall define a Frame type with an arbitration ID (uint32) field and an extended-ID boolean flag.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-001B",
+    "title": "CAN Frame control flags",
+    "text": "The Frame type shall carry RTR, FD, and BRS boolean flags.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-001C",
+    "title": "CAN Frame data payload",
+    "text": "The Frame type shall carry a variable-length byte vector as the data payload.",
     "category": "functional",
     "criticality": "high"
   },
@@ -43,8 +57,22 @@
   },
   {
     "id": "REQ-CAN-007",
-    "title": "RELAY bridge",
-    "text": "The system shall provide to_message(), from_message(), and adapt() to bridge CAN frames with relay::Message and relay::INode.",
+    "title": "RELAY bridge: to_message()",
+    "text": "The system shall provide to_message() to encode a CAN Frame and seq counter as a relay::Message.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-015",
+    "title": "RELAY bridge: from_message()",
+    "text": "The system shall provide from_message() to decode a relay::Message back into a CAN Frame.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CAN-016",
+    "title": "RELAY bridge: adapt()",
+    "text": "The system shall provide adapt() to wrap an IBus as a relay::INode, forwarding send/subscribe/close and assigning monotonically increasing seq numbers.",
     "category": "functional",
     "criticality": "high"
   },
@@ -127,8 +155,22 @@
   },
   {
     "id": "REQ-VIRT-005",
-    "title": "Virtual bus lifecycle",
-    "text": "close() shall be idempotent; send/subscribe after close shall return ErrClosed; subscriber channels shall be closed when the bus closes.",
+    "title": "Virtual bus close is idempotent",
+    "text": "close() shall be idempotent: calling it multiple times shall not panic, deadlock, or return an error.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-VIRT-006",
+    "title": "Virtual bus closed-state rejection",
+    "text": "send() and subscribe() called on a closed bus shall return ErrClosed.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-VIRT-007",
+    "title": "Virtual bus subscriber channel teardown",
+    "text": "All subscriber channels shall be closed when the bus is closed, unblocking any blocked recv() callers.",
     "category": "functional",
     "criticality": "high"
   },
@@ -568,8 +610,15 @@
   },
   {
     "id": "REQ-RELAY-026",
-    "title": "Metrics struct",
-    "text": "The system shall define a Metrics struct with write_count, deliver_count, drop_count, bytes_written, bytes_delivered, and error_count.",
+    "title": "Metrics counters: write and deliver",
+    "text": "The system shall define a Metrics struct with write_count and deliver_count fields tracking frame transmission and successful delivery.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-029",
+    "title": "Metrics counters: drop, bytes, and errors",
+    "text": "The Metrics struct shall include drop_count, bytes_written, bytes_delivered, and error_count fields.",
     "category": "functional",
     "criticality": "medium"
   },

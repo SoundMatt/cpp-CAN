@@ -46,14 +46,14 @@ inline std::error_code ErrPayloadTooLarge() noexcept { return relay::ErrPayloadT
 
 // ── Frame ─────────────────────────────────────────────────────────────────────
 
-// fusa:req REQ-CAN-001
+// fusa:req REQ-CAN-001 REQ-CAN-001B REQ-CAN-001C
 struct Frame {
     uint32_t             id{};    // arbitration ID (11 or 29 bits)
     bool                 ext{};   // true → 29-bit extended ID
     bool                 rtr{};   // Remote Transmission Request
     bool                 fd{};    // CAN FD frame (payload up to 64 bytes)
     bool                 brs{};   // Bit-Rate Switch (FD only)
-    std::vector<uint8_t> data;    // payload (0–8 bytes CAN, 0–64 bytes FD)
+    std::vector<uint8_t> data;    // payload (0-8 bytes CAN, 0-64 bytes FD)
 };
 
 // ── Filter ────────────────────────────────────────────────────────────────────
@@ -122,12 +122,12 @@ public:
 
 // ── RELAY bridge ─────────────────────────────────────────────────────────────
 
-// fusa:req REQ-CAN-007
+// fusa:req REQ-CAN-007 REQ-CAN-015
 relay::Message to_message(const Frame& f);
 Frame          from_message(const relay::Message& m);  // throws ErrInvalidFrame on bad ID
 
 // Wraps an IBus as a relay::INode for cross-protocol routing.
-// fusa:req REQ-CAN-007
+// fusa:req REQ-CAN-016
 std::unique_ptr<relay::INode> adapt(std::shared_ptr<IBus> bus);
 
 } // namespace can

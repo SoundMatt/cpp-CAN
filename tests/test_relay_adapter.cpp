@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// fusa:test REQ-CAN-007
+// fusa:test REQ-CAN-007 REQ-CAN-015 REQ-CAN-016
 
 #include <can/can.hpp>
 #include <can/virtual/bus.hpp>
@@ -11,7 +11,7 @@
 
 using namespace can;
 
-TEST_CASE("to_message: fields are encoded correctly", "[relay_adapter][REQ-CAN-007]") {
+TEST_CASE("to_message: fields are encoded correctly", "[relay_adapter][REQ-CAN-007][REQ-CAN-015]") {
     Frame f{0x7FF, false, false, true, true, {0x01, 0x02, 0x03}};
     relay::Message msg = to_message(f);
 
@@ -25,7 +25,7 @@ TEST_CASE("to_message: fields are encoded correctly", "[relay_adapter][REQ-CAN-0
     CHECK(msg.timestamp != std::chrono::system_clock::time_point{});
 }
 
-TEST_CASE("from_message: round-trip", "[relay_adapter][REQ-CAN-007]") {
+TEST_CASE("from_message: round-trip", "[relay_adapter][REQ-CAN-015]") {
     Frame orig{0x1FFFFFFF, true, false, true, true, {0xDE, 0xAD}};
     relay::Message msg = to_message(orig);
     Frame got = from_message(msg);
@@ -44,14 +44,14 @@ TEST_CASE("from_message: invalid ID throws ErrInvalidFrame", "[relay_adapter]") 
     REQUIRE_THROWS_AS(from_message(msg), ErrInvalidFrame);
 }
 
-TEST_CASE("adapt: protocol() returns CAN", "[relay_adapter][REQ-CAN-007]") {
+TEST_CASE("adapt: protocol() returns CAN", "[relay_adapter][REQ-CAN-016]") {
     auto bus  = virt::Bus::create();
     auto node = adapt(bus);
     CHECK(node->protocol() == relay::Protocol::CAN);
     node->close();
 }
 
-TEST_CASE("adapt: send/subscribe round-trip with seq numbering", "[relay_adapter][REQ-CAN-007]") {
+TEST_CASE("adapt: send/subscribe round-trip with seq numbering", "[relay_adapter][REQ-CAN-016]") {
     auto bus  = virt::Bus::create();
     auto node = adapt(bus);
 

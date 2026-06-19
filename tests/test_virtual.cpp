@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// fusa:test REQ-VIRT-001 through REQ-VIRT-005
+// fusa:test REQ-VIRT-001 through REQ-VIRT-007
 
 #include <can/virtual/bus.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -69,14 +69,14 @@ TEST_CASE("multiple subscribers each receive the frame", "[virtual][REQ-VIRT-002
     bus->close();
 }
 
-TEST_CASE("send on closed bus returns ErrClosed", "[virtual][REQ-VIRT-005]") {
+TEST_CASE("send on closed bus returns ErrClosed", "[virtual][REQ-VIRT-006]") {
     auto bus = Bus::create();
     bus->close();
     auto err = bus->send(Frame{0x100, false, false, false, false, {}});
     CHECK(err == relay::ErrClosed());
 }
 
-TEST_CASE("subscribe on closed bus returns ErrClosed", "[virtual][REQ-VIRT-005]") {
+TEST_CASE("subscribe on closed bus returns ErrClosed", "[virtual][REQ-VIRT-006]") {
     auto bus = Bus::create();
     bus->close();
     auto [ch, err] = bus->subscribe({}, {});
@@ -84,20 +84,20 @@ TEST_CASE("subscribe on closed bus returns ErrClosed", "[virtual][REQ-VIRT-005]"
     CHECK(ch == nullptr);
 }
 
-TEST_CASE("double close is idempotent", "[virtual][REQ-VIRT-005]") {
+TEST_CASE("double close is idempotent", "[virtual][REQ-VIRT-005][REQ-VIRT-006]") {
     auto bus = Bus::create();
     REQUIRE_FALSE(bus->close());
     REQUIRE_FALSE(bus->close());
 }
 
-TEST_CASE("send invalid frame returns error", "[virtual][REQ-VIRT-005]") {
+TEST_CASE("send invalid frame returns error", "[virtual][REQ-VIRT-006]") {
     auto bus = Bus::create();
     auto err = bus->send(Frame{0x800, false, false, false, false, {}});
     CHECK(err);  // standard ID too large
     bus->close();
 }
 
-TEST_CASE("subscriber channel closes when bus closes", "[virtual][REQ-VIRT-005]") {
+TEST_CASE("subscriber channel closes when bus closes", "[virtual][REQ-VIRT-007]") {
     auto bus = Bus::create();
     auto [ch, err] = bus->subscribe({}, {});
     REQUIRE_FALSE(err);
