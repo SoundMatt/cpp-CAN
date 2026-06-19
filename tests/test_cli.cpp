@@ -19,7 +19,7 @@ TEST_CASE("version_json matches RELAY spec 12.1 schema", "[cli][REQ-CLI-001]") {
     CHECK(j.find("\"tool\":\"cpp-CAN\"")     != std::string::npos);
     CHECK(j.find("\"language\":\"cpp\"")     != std::string::npos);
     CHECK(j.find("\"runtime\":\"c++17\"")    != std::string::npos);
-    CHECK(j.find("\"version\":\"0.1.4\"")    != std::string::npos);
+    CHECK(j.find("\"version\":\"0.1.5\"")    != std::string::npos);
 }
 
 TEST_CASE("capabilities_json matches RELAY spec 12.2 schema", "[cli][REQ-CLI-002]") {
@@ -90,6 +90,11 @@ TEST_CASE("parse_frame_json: base64 data field", "[cli][REQ-CLI-004]") {
     CHECK(f.data[1] == 0xAD);
     CHECK(f.data[2] == 0xBE);
     CHECK(f.data[3] == 0xEF);
+}
+
+TEST_CASE("parse_frame_json: id above uint32 max throws", "[cli][REQ-CLI-006]") {
+    CHECK_THROWS_AS(parse_frame_json(R"({"id":5000000000,"data":[]})"),
+                    std::runtime_error);
 }
 
 TEST_CASE("parse_frame_json: missing id throws", "[cli][REQ-CLI-006]") {

@@ -87,6 +87,7 @@ inline bool extract_u32(const std::string& s, const std::string& key, uint32_t& 
     char* end = nullptr;
     unsigned long v = std::strtoul(s.c_str() + p, &end, 10);
     if (!end || end == s.c_str() + p) return false;
+    if (v > 0xFFFFFFFFUL) return false;
     out = static_cast<uint32_t>(v);
     return true;
 }
@@ -115,6 +116,7 @@ inline bool extract_bytes(const std::string& s, const std::string& key,
         char* end = nullptr;
         unsigned long b = std::strtoul(s.c_str() + p, &end, 10);
         if (!end || end == s.c_str() + p) break;
+        if (b > 255) break;
         out.push_back(static_cast<uint8_t>(b));
         p = static_cast<std::size_t>(end - s.c_str());
         while (p < s.size() && (s[p]==' ' || s[p]=='\t')) ++p;
@@ -167,7 +169,7 @@ inline std::string version_json() {
     return "{"
            "\"spec_version\":\"0.2\","
            "\"tool\":\"cpp-CAN\","
-           "\"version\":\"0.1.4\","
+           "\"version\":\"0.1.5\","
            "\"language\":\"cpp\","
            "\"runtime\":\"c++17\""
            "}";
@@ -178,7 +180,7 @@ inline std::string capabilities_json() {
     return "{"
            "\"spec_version\":\"0.2\","
            "\"tool\":\"cpp-CAN\","
-           "\"version\":\"0.1.4\","
+           "\"version\":\"0.1.5\","
            "\"kind\":\"capabilities\","
            "\"commands\":[\"version\",\"capabilities\",\"status\",\"convert\"],"
            "\"transports\":[\"CAN\"],"
@@ -193,7 +195,7 @@ inline std::string capabilities_json() {
 inline std::string status_json() {
     return "{"
            "\"tool\":\"cpp-CAN\","
-           "\"version\":\"0.1.4\","
+           "\"version\":\"0.1.5\","
            "\"healthy\":true,"
            "\"connected\":false,"
            "\"endpoint\":\"\","

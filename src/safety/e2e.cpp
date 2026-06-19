@@ -39,9 +39,7 @@ static std::vector<uint8_t> build_header(uint16_t data_id, uint16_t source_id,
     // hdr[8:9] = 0 during CRC computation
 
     // CRC over bytes 0–7 and payload
-    uint16_t crc_val = crc16(hdr.data(), 8);
-    crc_val = crc16(hdr.data(), 0);  // restart
-    crc_val = 0xFFFF;
+    uint16_t crc_val = 0xFFFF;
     // compute over header bytes 0–7 (CRC slot = 0)
     for (int i = 0; i < 8; ++i) {
         uint8_t b = hdr[i];
