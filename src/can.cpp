@@ -14,7 +14,7 @@ namespace can {
 
 // ── validate_frame ────────────────────────────────────────────────────────────
 
-// fusa:req REQ-CAN-009 through REQ-CAN-014
+// fusa:req REQ-CAN-009 REQ-CAN-010 REQ-CAN-011 REQ-CAN-012 REQ-CAN-013 REQ-CAN-014
 // fusa:req REQ-SEC-001 REQ-SEC-002 REQ-SEC-003
 void validate_frame(const Frame& f) {
     if (f.ext && f.id > kCANMaxExtID)

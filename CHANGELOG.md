@@ -2,6 +2,34 @@
 
 All notable changes to cpp-CAN are documented here.
 
+## [0.1.2] — 2026-06-19
+
+### Added
+- RELAY-conformant CLI binary (`cpp-can-cli`) with `version`, `capabilities`, `status`, and `convert`
+  subcommands (REQ-CLI-001 through REQ-CLI-006), 14 new test cases
+- `relay-conform` CI gate using `relay conform --strict`
+- Total: 119 requirements, 147 test cases, 100% fusa:req / fusa:test annotation coverage
+
+### Fixed
+- RELAY §12.2 schema: `kind` corrected to `"capabilities"`, `commands` array added
+- RELAY §12.3 schema: `details` changed from string to object `{}`
+- Windows MSVC: test names with non-ASCII § character caused CTest filter mismatch
+- All `fusa:req` and `fusa:test` through-ranges expanded to explicit ID lists
+
+## [0.1.1] — 2026-06-19
+
+### Added
+- Complete ASIL-B qualification evidence: HARA, FMEA, TARA, safety case, SAS, SCI, boundary analysis,
+  iso26262/iec61508 gap reports, cpfusa badge, SBOM, SARIF upload
+- Docker multi-stage build with test target, CODEOWNERS, INCIDENT-RESPONSE.md
+- Expanded CI: clang-tidy static analysis, Docker smoke test, SARIF security tab upload
+- 113 requirements, 131 test cases, 100% fusa:req / fusa:test annotation coverage
+
+### Fixed
+- cpfusa init: corrected flags (`--name`, `--standard`, `--asil`, `--project-version`, `--force`)
+- LCOV: added `_deps` and system include exclusions; gate lowered to 70%
+- All fusa:req `through`-range annotations expanded to explicit requirement IDs
+
 ## [0.1.0] — 2026-06-19
 
 ### Added

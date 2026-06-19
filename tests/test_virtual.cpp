@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// fusa:test REQ-VIRT-001 through REQ-VIRT-009
+// fusa:test REQ-VIRT-001 REQ-VIRT-002 REQ-VIRT-003 REQ-VIRT-004 REQ-VIRT-005 REQ-VIRT-006 REQ-VIRT-007 REQ-VIRT-008 REQ-VIRT-009
 // fusa:test REQ-CAN-017 REQ-CAN-018
 // fusa:test REQ-RELAY-023 REQ-RELAY-024 REQ-RELAY-025 REQ-RELAY-026 REQ-RELAY-027 REQ-RELAY-028 REQ-RELAY-029
 
@@ -122,6 +122,33 @@ TEST_CASE("DropNewest back-pressure drops new frames when full", "[virtual][REQ-
     auto m1 = ch->recv(); CHECK(m1->id == 0x001);
     auto m2 = ch->recv(); CHECK(m2->id == 0x002);
     bus->close();
+}
+
+TEST_CASE("DropOldest back-pressure evicts oldest frame when full", "[virtual][REQ-VIRT-004]") {
+    auto bus = Bus::create();
+    auto [ch, err] = bus->subscribe({}, {relay::with_channel_depth(2),
+                                          relay::with_back_pressure(relay::BackPressurePolicy::DropOldest)});
+    REQUIRE_FALSE(err);
+
+    bus->send(Frame{0x001, false, false, false, false, {1}});
+    bus->send(Frame{0x002, false, false, false, false, {2}});
+    bus->send(Frame{0x003, false, false, false, false, {3}});  // evicts 0x001
+
+    CHECK(ch->size() == 2);
+    auto m1 = ch->recv(); CHECK(m1->id == 0x002);
+    auto m2 = ch->recv(); CHECK(m2->id == 0x003);
+    bus->close();
+}
+
+TEST_CASE("close_with_drain returns ok when all items consumed", "[virtual][REQ-VIRT-009][REQ-RELAY-028]") {
+    auto bus = Bus::create();
+    auto [ch, err] = bus->subscribe({}, {});
+    REQUIRE_FALSE(err);
+
+    bus->send(Frame{0x100, false, false, false, false, {}});
+    ch->recv();
+
+    CHECK_FALSE(bus->close_with_drain(std::chrono::milliseconds{100}));
 }
 
 TEST_CASE("health reports OK when open, Down when closed", "[virtual][REQ-VIRT-009][REQ-RELAY-023][REQ-RELAY-024][REQ-RELAY-025]") {

@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// fusa:test REQ-DBC-001 through REQ-DBC-007
+// fusa:test REQ-DBC-001 REQ-DBC-002 REQ-DBC-003 REQ-DBC-004 REQ-DBC-005 REQ-DBC-006 REQ-DBC-007
 
 #include <can/dbc/parser.hpp>
 #include <catch2/catch_test_macros.hpp>

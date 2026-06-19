@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// fusa:test REQ-SAFETY-001 through REQ-SAFETY-011
+// fusa:test REQ-SAFETY-001 REQ-SAFETY-002 REQ-SAFETY-003 REQ-SAFETY-004 REQ-SAFETY-005 REQ-SAFETY-006 REQ-SAFETY-007 REQ-SAFETY-008 REQ-SAFETY-009 REQ-SAFETY-010 REQ-SAFETY-011
 
 #include <can/safety/e2e.hpp>
 #include <catch2/catch_test_macros.hpp>

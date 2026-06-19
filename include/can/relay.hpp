@@ -5,8 +5,6 @@
 
 // relay.hpp — RELAY spec types shared across all protocol implementations.
 // Mirrors the RELAY Go package spec v0.2.
-//
-// REQ-RELAY-001 through REQ-RELAY-028 are satisfied by the types below.
 
 #pragma once
 

@@ -5,8 +5,6 @@
 
 // can.hpp — Core CAN bus types and IBus interface.
 // C++ translation of github.com/SoundMatt/go-CAN.
-//
-// REQ-CAN-001 through REQ-CAN-014 are covered here.
 
 #pragma once
 

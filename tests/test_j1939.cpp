@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// fusa:test REQ-J1939-001 through REQ-J1939-006
+// fusa:test REQ-J1939-001 REQ-J1939-002 REQ-J1939-003 REQ-J1939-004 REQ-J1939-005 REQ-J1939-006
 
 #include <can/j1939/pgn.hpp>
 #include <can/virtual/bus.hpp>

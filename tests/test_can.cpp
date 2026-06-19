@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// fusa:test REQ-CAN-001 through REQ-CAN-016
+// fusa:test REQ-CAN-001 REQ-CAN-001B REQ-CAN-001C REQ-CAN-002 REQ-CAN-003 REQ-CAN-004 REQ-CAN-005 REQ-CAN-006 REQ-CAN-008 REQ-CAN-009 REQ-CAN-010 REQ-CAN-011 REQ-CAN-012 REQ-CAN-013 REQ-CAN-014
 
 #include <can/can.hpp>
 #include <catch2/catch_test_macros.hpp>

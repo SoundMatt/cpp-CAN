@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <string>
 
-// fusa:req REQ-DBC-001 through REQ-DBC-007
+// fusa:req REQ-DBC-001 REQ-DBC-002 REQ-DBC-003 REQ-DBC-004 REQ-DBC-005 REQ-DBC-006 REQ-DBC-007
 // fusa:req REQ-SEC-015
 
 namespace can::dbc {

@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// fusa:test REQ-ISOTP-001 through REQ-ISOTP-013
+// fusa:test REQ-ISOTP-001 REQ-ISOTP-002 REQ-ISOTP-003 REQ-ISOTP-004 REQ-ISOTP-005 REQ-ISOTP-006 REQ-ISOTP-007 REQ-ISOTP-008 REQ-ISOTP-009 REQ-ISOTP-010 REQ-ISOTP-011 REQ-ISOTP-012 REQ-ISOTP-013
 
 #include <can/isotp/transport.hpp>
 #include <can/virtual/bus.hpp>

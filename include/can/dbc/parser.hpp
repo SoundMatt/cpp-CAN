@@ -77,7 +77,7 @@ public:
 
 // Parses a DBC file from the given stream.
 // Throws std::runtime_error on parse failure.
-// fusa:req REQ-DBC-001 through REQ-DBC-004
+// fusa:req REQ-DBC-001 REQ-DBC-002 REQ-DBC-003 REQ-DBC-004
 std::unique_ptr<DB> parse(std::istream& r);
 
 } // namespace can::dbc

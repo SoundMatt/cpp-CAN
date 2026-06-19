@@ -10,7 +10,7 @@ namespace can::j1939 {
 
 // ── ID decode / encode ────────────────────────────────────────────────────────
 
-// fusa:req REQ-J1939-001 through REQ-J1939-003
+// fusa:req REQ-J1939-001 REQ-J1939-002 REQ-J1939-003
 DecodedID decode_id(uint32_t id) noexcept {
     Priority priority = static_cast<Priority>((id >> 26) & 0x07);
     uint8_t  src      = static_cast<uint8_t>(id & 0xFF);
