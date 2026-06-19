@@ -84,6 +84,7 @@ enum class Errc : int {
     payload_too_large = 4,
 };
 
+// fusa:req REQ-RELAY-021
 const std::error_category& error_category() noexcept;
 std::error_code            make_error_code(Errc e) noexcept;
 
@@ -119,7 +120,8 @@ struct SubscriberConfig {
 // REQ-RELAY-017
 using SubscriberOption = std::function<void(SubscriberConfig&)>;
 
-// Option factories — REQ-RELAY-017
+// Option factories — REQ-RELAY-017 REQ-RELAY-051 REQ-RELAY-056
+// fusa:req REQ-RELAY-051 REQ-RELAY-056
 inline SubscriberOption with_channel_depth(int n) {
     return [n](SubscriberConfig& c){ c.chan_depth = n; };
 }
@@ -212,7 +214,7 @@ public:
 
 } // namespace relay
 
-// Allow implicit construction of std::error_code from relay::Errc.
+// fusa:req REQ-RELAY-022 — allow implicit construction of std::error_code from relay::Errc.
 namespace std {
 template<>
 struct is_error_code_enum<relay::Errc> : true_type {};

@@ -532,6 +532,20 @@
     "criticality": "low"
   },
   {
+    "id": "REQ-RELAY-021",
+    "title": "Error category registration",
+    "text": "The system shall provide error_category() returning a singleton std::error_category with a unique name, and make_error_code(Errc) mapping each Errc enumerator to a distinct std::error_code in that category.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-RELAY-022",
+    "title": "Errc is_error_code_enum specialization",
+    "text": "relay::Errc shall specialize std::is_error_code_enum so that relay::Errc values implicitly convert to std::error_code without an explicit make_error_code() call.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
     "id": "REQ-RELAY-023",
     "title": "HealthStatus enum",
     "text": "The system shall define HealthStatus with OK=0, Degraded=1, Down=2.",

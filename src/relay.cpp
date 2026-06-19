@@ -10,6 +10,7 @@
 #include <stdexcept>
 
 // fusa:req REQ-RELAY-001 through REQ-RELAY-028
+// fusa:req REQ-RELAY-051 REQ-RELAY-056 REQ-RELAY-059
 
 namespace relay {
 
@@ -61,7 +62,7 @@ std::string Version::to_string() const {
     return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
 }
 
-// ── Error category ────────────────────────────────────────────────────────────
+// ── Error category ── REQ-RELAY-021 REQ-RELAY-022 ────────────────────────────
 
 namespace {
 

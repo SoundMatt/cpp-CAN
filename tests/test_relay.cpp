@@ -4,6 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // fusa:test REQ-RELAY-001 through REQ-RELAY-028
+// fusa:test REQ-RELAY-051 REQ-RELAY-056 REQ-RELAY-059
 
 #include <can/relay.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -135,4 +136,22 @@ TEST_CASE("with_topic option", "[relay][REQ-RELAY-056]") {
 
 TEST_CASE("kSpecVersion is non-empty", "[relay][REQ-RELAY-020]") {
     CHECK(std::string(kSpecVersion) == "0.2");
+}
+
+// ── Error category registration ── REQ-RELAY-021 REQ-RELAY-022 ───────────────
+
+TEST_CASE("error_category name is relay", "[relay][REQ-RELAY-021]") {
+    CHECK(std::string(error_category().name()) == "relay");
+}
+
+TEST_CASE("make_error_code returns code in relay category", "[relay][REQ-RELAY-021]") {
+    auto ec = make_error_code(Errc::closed);
+    CHECK(&ec.category() == &error_category());
+    CHECK(ec.value()     == static_cast<int>(Errc::closed));
+}
+
+TEST_CASE("Errc implicitly converts to error_code via is_error_code_enum", "[relay][REQ-RELAY-022]") {
+    std::error_code ec = Errc::timeout;
+    CHECK(ec == ErrTimeout());
+    CHECK(&ec.category() == &error_category());
 }
