@@ -233,7 +233,7 @@
   {
     "id": "REQ-ISOTP-005",
     "title": "ISO-TP single-frame send",
-    "text": "send() shall transmit payloads of 1–7 bytes as a Single Frame (SF).",
+    "text": "send() shall transmit payloads of 1\u20137 bytes as a Single Frame (SF).",
     "category": "functional",
     "criticality": "high"
   },
@@ -450,7 +450,7 @@
   {
     "id": "REQ-DBC-006",
     "title": "VAL_ value table",
-    "text": "parse() shall read VAL_ lines and populate Signal.values with raw→label mappings.",
+    "text": "parse() shall read VAL_ lines and populate Signal.values with raw\u2192label mappings.",
     "category": "functional",
     "criticality": "low"
   },
@@ -736,14 +736,14 @@
   },
   {
     "id": "REQ-SEC-008",
-    "title": "Bus flooding — channel depth cap",
+    "title": "Bus flooding \u2014 channel depth cap",
     "text": "Each subscriber channel shall have a bounded capacity; the bus shall never allocate unbounded memory in response to a high frame rate, regardless of how many frames are produced.",
     "category": "security",
     "criticality": "high"
   },
   {
     "id": "REQ-SEC-009",
-    "title": "Bus flooding — subscriber isolation",
+    "title": "Bus flooding \u2014 subscriber isolation",
     "text": "A slow or full subscriber using DropNewest or DropOldest back-pressure shall not delay or block frame delivery to other subscribers.",
     "category": "security",
     "criticality": "high"
@@ -788,6 +788,48 @@
     "title": "DBC unknown message safety",
     "text": "DB::decode() shall return an empty map for an unrecognised message ID rather than asserting or accessing uninitialised state, preventing information disclosure from unknown frame IDs.",
     "category": "security",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-CLI-001",
+    "title": "CLI version subcommand",
+    "text": "The cpp-can-cli binary shall output spec version, implementation name, and version as JSON to stdout when invoked with the 'version' subcommand.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-CLI-002",
+    "title": "CLI capabilities subcommand",
+    "text": "The cpp-can-cli binary shall output supported protocols and commands as JSON to stdout when invoked with the 'capabilities' subcommand.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-CLI-003",
+    "title": "CLI status subcommand",
+    "text": "The cpp-can-cli binary shall output health status as JSON to stdout when invoked with the 'status' subcommand.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-CLI-004",
+    "title": "CLI convert reads can.Frame JSON",
+    "text": "The convert subcommand with --protocol CAN shall read a can.Frame JSON object from stdin and parse it into a Frame struct.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CLI-005",
+    "title": "CLI convert writes relay.Message JSON",
+    "text": "The convert subcommand shall call to_message() and write the resulting relay.Message as JSON to stdout, with zeroed timestamp and sorted meta keys.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-CLI-006",
+    "title": "CLI convert exit codes",
+    "text": "The convert subcommand shall exit 0 on success, 1 on invalid input (bad JSON or frame validation failure), and 2 on invalid arguments (missing --protocol, unsupported format, unknown command).",
+    "category": "functional",
     "criticality": "medium"
   }
 ]

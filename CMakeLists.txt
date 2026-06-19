@@ -62,5 +62,12 @@ if(CPPCAN_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+# ── CLI binary ────────────────────────────────────────────────────────────────
+
+option(CPPCAN_BUILD_CLI "Build RELAY convert CLI" ON)
+if(CPPCAN_BUILD_CLI)
+    add_subdirectory(cli)
+endif()
+
 message(STATUS "cpp-CAN v${PROJECT_VERSION} — C++${CMAKE_CXX_STANDARD} / ${CMAKE_BUILD_TYPE}")
 message(STATUS "  Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")

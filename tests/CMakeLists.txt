@@ -8,6 +8,7 @@ add_executable(cppcan_tests
     test_safety.cpp
     test_dbc.cpp
     test_security.cpp
+    test_cli.cpp
 )
 
 target_link_libraries(cppcan_tests
@@ -17,7 +18,9 @@ target_link_libraries(cppcan_tests
 )
 
 target_include_directories(cppcan_tests
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../cli
 )
 
 include(CTest)

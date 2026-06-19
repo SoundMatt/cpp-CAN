@@ -124,6 +124,35 @@ jobs:
           name: coverage-report
           path: coverage.info
 
+  relay-conform:
+    name: RELAY conformance (relay conform)
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build
+
+      - name: Build CLI
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=17 \
+            -G Ninja
+          cmake --build build --parallel --target cpp-can-cli
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Install relay tool
+        run: go install github.com/SoundMatt/RELAY/cmd/relay@latest
+
+      - name: RELAY conformance gate
+        run: relay conform ./build/cli/cpp-can-cli --strict
+
   sanitizers:
     name: ASan + UBSan (IEC 61508 SIL-2 dynamic analysis)
     runs-on: ubuntu-22.04
