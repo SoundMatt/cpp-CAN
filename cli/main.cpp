@@ -26,7 +26,7 @@ static int cmd_status()       { std::cout << cli::status_json()        << "\n"; 
 static int cmd_convert(const std::string& protocol) {
     if (protocol != "CAN") {
         std::cerr << "ErrUnsupportedProtocol\n";
-        return 1;
+        return 2;
     }
 
     std::string input;

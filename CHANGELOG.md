@@ -2,6 +2,16 @@
 
 All notable changes to cpp-CAN are documented here.
 
+## [0.1.5] — 2026-06-19
+
+### Fixed
+- `extract_u32`: reject IDs > 0xFFFFFFFF before cast (silent truncation on LP64 systems)
+- `extract_bytes`: reject byte values > 255 before cast (silent truncation to uint8_t)
+- `cmd_convert`: unsupported protocol now exits with code 2 (argument error) not 1 (input error)
+- `build_header` in e2e.cpp: removed dead code (two redundant CRC calls before correct inline loop)
+- 1 new test: parse_frame_json: id above uint32 max throws
+- Total: 119 requirements, 149 test cases
+
 ## [0.1.4] — 2026-06-19
 
 ### Fixed
