@@ -22,6 +22,51 @@ namespace cli {
 
 namespace detail {
 
+inline int b64val(unsigned char c) noexcept {
+    if (c >= 'A' && c <= 'Z') return c - 'A';
+    if (c >= 'a' && c <= 'z') return c - 'a' + 26;
+    if (c >= '0' && c <= '9') return c - '0' + 52;
+    if (c == '+') return 62;
+    if (c == '/') return 63;
+    return -1;
+}
+
+inline std::string base64_encode(const std::vector<uint8_t>& data) {
+    static const char kAlpha[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string out;
+    out.reserve(((data.size() + 2) / 3) * 4);
+    for (std::size_t i = 0; i < data.size(); i += 3) {
+        uint32_t b = static_cast<uint32_t>(data[i]) << 16;
+        if (i + 1 < data.size()) b |= static_cast<uint32_t>(data[i+1]) << 8;
+        if (i + 2 < data.size()) b |= static_cast<uint32_t>(data[i+2]);
+        out += kAlpha[(b >> 18) & 0x3F];
+        out += kAlpha[(b >> 12) & 0x3F];
+        out += (i + 1 < data.size()) ? kAlpha[(b >> 6) & 0x3F] : '=';
+        out += (i + 2 < data.size()) ? kAlpha[b & 0x3F]        : '=';
+    }
+    return out;
+}
+
+inline std::vector<uint8_t> base64_decode(const std::string& s) {
+    std::vector<uint8_t> out;
+    out.reserve(s.size() * 3 / 4);
+    uint32_t accum = 0;
+    int bits = 0;
+    for (unsigned char c : s) {
+        if (c == '=') break;
+        int v = b64val(c);
+        if (v < 0) continue;
+        accum = (accum << 6) | static_cast<uint32_t>(v);
+        bits += 6;
+        if (bits >= 8) {
+            bits -= 8;
+            out.push_back(static_cast<uint8_t>((accum >> bits) & 0xFF));
+        }
+    }
+    return out;
+}
+
 inline bool extract_bool(const std::string& s, const std::string& key, bool& out) {
     std::string k = "\"" + key + "\":";
     auto p = s.find(k);
@@ -53,7 +98,15 @@ inline bool extract_bytes(const std::string& s, const std::string& key,
     if (p == std::string::npos) return false;
     p += k.size();
     while (p < s.size() && (s[p] == ' ' || s[p] == '\t')) ++p;
-    if (p >= s.size() || s[p] != '[') return false;
+    if (p >= s.size()) return false;
+    if (s[p] == '"') {
+        ++p;
+        auto end = s.find('"', p);
+        if (end == std::string::npos) return false;
+        out = base64_decode(s.substr(p, end - p));
+        return true;
+    }
+    if (s[p] != '[') return false;
     ++p;
     out.clear();
     while (p < s.size()) {
@@ -89,17 +142,12 @@ inline can::Frame parse_frame_json(const std::string& json) {
 inline std::string message_to_json(const relay::Message& m) {
     std::ostringstream o;
     o << "{";
-    o << "\"protocol\":\"" << relay::to_string(m.protocol) << "\",";
+    o << "\"protocol\":" << static_cast<int>(m.protocol) << ",";
     o << "\"version\":{\"major\":" << m.version.major
       << ",\"minor\":"             << m.version.minor
       << ",\"patch\":"             << m.version.patch << "},";
     o << "\"id\":\"" << m.id << "\",";
-    o << "\"payload\":[";
-    for (std::size_t i = 0; i < m.payload.size(); ++i) {
-        if (i) o << ",";
-        o << static_cast<int>(m.payload[i]);
-    }
-    o << "],";
+    o << "\"payload\":\"" << detail::base64_encode(m.payload) << "\",";
     o << "\"timestamp\":\"1970-01-01T00:00:00Z\",";
     o << "\"seq\":" << m.seq << ",";
     o << "\"meta\":{";
@@ -119,7 +167,7 @@ inline std::string version_json() {
     return "{"
            "\"spec_version\":\"0.2\","
            "\"tool\":\"cpp-CAN\","
-           "\"version\":\"0.1.1\","
+           "\"version\":\"0.1.4\","
            "\"language\":\"cpp\","
            "\"runtime\":\"c++17\""
            "}";
@@ -130,7 +178,7 @@ inline std::string capabilities_json() {
     return "{"
            "\"spec_version\":\"0.2\","
            "\"tool\":\"cpp-CAN\","
-           "\"version\":\"0.1.1\","
+           "\"version\":\"0.1.4\","
            "\"kind\":\"capabilities\","
            "\"commands\":[\"version\",\"capabilities\",\"status\",\"convert\"],"
            "\"transports\":[\"CAN\"],"
@@ -145,7 +193,7 @@ inline std::string capabilities_json() {
 inline std::string status_json() {
     return "{"
            "\"tool\":\"cpp-CAN\","
-           "\"version\":\"0.1.1\","
+           "\"version\":\"0.1.4\","
            "\"healthy\":true,"
            "\"connected\":false,"
            "\"endpoint\":\"\","

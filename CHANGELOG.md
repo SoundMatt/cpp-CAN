@@ -2,6 +2,28 @@
 
 All notable changes to cpp-CAN are documented here.
 
+## [0.1.4] — 2026-06-19
+
+### Fixed
+- `convert` emitted `protocol` as string `"CAN"` — now integer `1` per RELAY spec §3
+- `convert` emitted `payload` as JSON array — now base64 string per RELAY spec §4.1
+- `parse_frame_json` ignored base64 `data` field — now accepts both base64 string and byte array
+- CLI version string updated to 0.1.4; project version in CMakeLists bumped to match
+
+### Added
+- 1 new test: `parse_frame_json: base64 data field` (closes #6)
+- Total: 119 requirements, 148 test cases
+
+## [0.1.3] — 2026-06-19
+
+### Fixed
+- All `fusa:req` and `fusa:test` through-ranges expanded to explicit ID lists
+- DropOldest back-pressure policy test added (REQ-VIRT-004)
+- `close_with_drain` functional test added (REQ-RELAY-028, REQ-VIRT-009)
+
+### Added
+- Total: 119 requirements, 147 test cases, 100% fusa:req / fusa:test annotation coverage
+
 ## [0.1.2] — 2026-06-19
 
 ### Added

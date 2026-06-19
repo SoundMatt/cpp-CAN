@@ -19,7 +19,7 @@ TEST_CASE("version_json matches RELAY spec 12.1 schema", "[cli][REQ-CLI-001]") {
     CHECK(j.find("\"tool\":\"cpp-CAN\"")     != std::string::npos);
     CHECK(j.find("\"language\":\"cpp\"")     != std::string::npos);
     CHECK(j.find("\"runtime\":\"c++17\"")    != std::string::npos);
-    CHECK(j.find("\"version\":\"0.1.1\"")    != std::string::npos);
+    CHECK(j.find("\"version\":\"0.1.4\"")    != std::string::npos);
 }
 
 TEST_CASE("capabilities_json matches RELAY spec 12.2 schema", "[cli][REQ-CLI-002]") {
@@ -81,6 +81,17 @@ TEST_CASE("parse_frame_json: full payload array", "[cli][REQ-CLI-004]") {
     CHECK(f.data[3] == 64);
 }
 
+TEST_CASE("parse_frame_json: base64 data field", "[cli][REQ-CLI-004]") {
+    auto f = parse_frame_json(R"({"id":291,"fd":true,"data":"3q2+7w=="})");
+    CHECK(f.id == 291u);
+    CHECK(f.fd == true);
+    REQUIRE(f.data.size() == 4);
+    CHECK(f.data[0] == 0xDE);
+    CHECK(f.data[1] == 0xAD);
+    CHECK(f.data[2] == 0xBE);
+    CHECK(f.data[3] == 0xEF);
+}
+
 TEST_CASE("parse_frame_json: missing id throws", "[cli][REQ-CLI-006]") {
     CHECK_THROWS_AS(parse_frame_json(R"({"ext":false,"data":[]})"),
                     std::runtime_error);
@@ -96,8 +107,8 @@ TEST_CASE("message_to_json: protocol and id fields", "[cli][REQ-CLI-005]") {
     msg.seq       = 0;
 
     std::string j = message_to_json(msg);
-    CHECK(j.find("\"protocol\":\"CAN\"") != std::string::npos);
-    CHECK(j.find("\"id\":\"256\"")       != std::string::npos);
+    CHECK(j.find("\"protocol\":1") != std::string::npos);
+    CHECK(j.find("\"id\":\"256\"")  != std::string::npos);
 }
 
 TEST_CASE("message_to_json: version fields", "[cli][REQ-CLI-005]") {
@@ -112,22 +123,21 @@ TEST_CASE("message_to_json: version fields", "[cli][REQ-CLI-005]") {
     CHECK(j.find("\"patch\":0") != std::string::npos);
 }
 
-TEST_CASE("message_to_json: payload bytes", "[cli][REQ-CLI-005]") {
+TEST_CASE("message_to_json: payload bytes encoded as base64", "[cli][REQ-CLI-005]") {
     can::Frame f{0x1, false, false, false, false, {171, 205}};
     auto msg = can::to_message(f);
     msg.version = {0, 2, 0}; msg.timestamp = {}; msg.seq = 0;
 
     std::string j = message_to_json(msg);
-    CHECK(j.find("171") != std::string::npos);
-    CHECK(j.find("205") != std::string::npos);
+    CHECK(j.find("\"payload\":\"q80=\"") != std::string::npos);
 }
 
-TEST_CASE("message_to_json: empty payload", "[cli][REQ-CLI-005]") {
+TEST_CASE("message_to_json: empty payload encoded as empty base64 string", "[cli][REQ-CLI-005]") {
     can::Frame f{0x200, true, false, false, false, {}};
     auto msg = can::to_message(f);
     msg.version = {0, 2, 0}; msg.timestamp = {}; msg.seq = 0;
 
-    CHECK(message_to_json(msg).find("\"payload\":[]") != std::string::npos);
+    CHECK(message_to_json(msg).find("\"payload\":\"\"") != std::string::npos);
 }
 
 TEST_CASE("message_to_json: zeroed timestamp", "[cli][REQ-CLI-005]") {

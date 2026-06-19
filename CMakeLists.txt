@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(cppcan
-    VERSION 0.1.0
+    VERSION 0.1.4
     DESCRIPTION "C++ CAN bus library — RELAY-conformant"
     HOMEPAGE_URL "https://github.com/SoundMatt/cpp-CAN"
     LANGUAGES CXX
