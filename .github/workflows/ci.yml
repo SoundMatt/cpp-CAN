@@ -143,88 +143,91 @@ jobs:
 
       - name: cpfusa init
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa init --project cpp-CAN || true
+        run: ../cpp-FuSa/build/cpfusa init --project cpp-CAN --dir . || true
 
       - name: cpfusa check
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa check
+        run: ../cpp-FuSa/build/cpfusa check --dir .
 
       - name: cpfusa lint
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa lint || true
+        run: ../cpp-FuSa/build/cpfusa lint --dir . || true
 
       - name: cpfusa trace (requirements traceability)
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa trace
+        run: ../cpp-FuSa/build/cpfusa trace --dir .
 
       - name: cpfusa cyber
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa cyber --write || true
+        run: ../cpp-FuSa/build/cpfusa cyber --write --dir . || true
 
       - name: cpfusa qualify (ASIL-B gate)
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa qualify
+        run: ../cpp-FuSa/build/cpfusa qualify --dir .
 
       - name: cpfusa hara init
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa hara init --project cpp-CAN || true
+        run: ../cpp-FuSa/build/cpfusa hara init --project cpp-CAN --dir . || true
 
       - name: cpfusa iso26262 (ASIL-B)
         working-directory: cpp-CAN
         run: |
           ../cpp-FuSa/build/cpfusa iso26262 \
             --asil ASIL-B \
-            --output iso26262-gap-report.json || true
+            --output iso26262-gap-report.json \
+            --dir . || true
 
       - name: cpfusa iec61508 (SIL-2)
         working-directory: cpp-CAN
         run: |
           ../cpp-FuSa/build/cpfusa iec61508 \
             --sil SIL-2 \
-            --output iec61508-gap-report.json || true
+            --output iec61508-gap-report.json \
+            --dir . || true
 
       - name: cpfusa boundary
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa boundary
+        run: ../cpp-FuSa/build/cpfusa boundary --dir .
 
       - name: cpfusa tara
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa tara
+        run: ../cpp-FuSa/build/cpfusa tara --dir .
 
       - name: cpfusa fmea
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa fmea
+        run: ../cpp-FuSa/build/cpfusa fmea --dir .
 
       - name: cpfusa safety-case
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa safety-case
+        run: ../cpp-FuSa/build/cpfusa safety-case --dir .
 
       - name: cpfusa sas
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa sas
+        run: ../cpp-FuSa/build/cpfusa sas --dir .
 
       - name: cpfusa sci
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa sci
+        run: ../cpp-FuSa/build/cpfusa sci --dir .
 
       - name: cpfusa badge
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa badge
+        run: ../cpp-FuSa/build/cpfusa badge --dir .
 
       - name: cpfusa vuln
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa vuln
+        run: ../cpp-FuSa/build/cpfusa vuln --dir .
 
       - name: cpfusa metrics record
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa metrics record
+        run: ../cpp-FuSa/build/cpfusa metrics record --dir .
 
       - name: cpfusa report (JSON)
         working-directory: cpp-CAN
         run: |
           ../cpp-FuSa/build/cpfusa report \
             --format json \
-            --output check-report.json
+            --output check-report.json \
+            --dir .
 
       - name: Upload ASIL-B evidence artifacts
         uses: actions/upload-artifact@v4
@@ -336,14 +339,15 @@ jobs:
 
       - name: cpfusa init
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa init --project cpp-CAN || true
+        run: ../cpp-FuSa/build/cpfusa init --project cpp-CAN --dir . || true
 
       - name: Generate SARIF report
         working-directory: cpp-CAN
         run: |
           ../cpp-FuSa/build/cpfusa check \
             --format sarif \
-            --output cpfusa.sarif || true
+            --output cpfusa.sarif \
+            --dir . || true
 
       - name: Upload SARIF to GitHub Security tab
         if: hashFiles('cpp-CAN/cpfusa.sarif') != ''
