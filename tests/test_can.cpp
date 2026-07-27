@@ -233,8 +233,9 @@ TEST_CASE("Frame has data payload vector", "[can][REQ-CAN-001C]") {
 
 // ── kSpecVersion ─────────────────────────────────────────────────────────────
 
-TEST_CASE("kSpecVersion is 0.2", "[can][REQ-CAN-005]") {
-    CHECK(std::string(kSpecVersion) == "0.2");
+TEST_CASE("kSpecVersion tracks the single relay::kRelaySpecVersion source of truth", "[can][REQ-CAN-005]") {
+    CHECK(std::string(kSpecVersion) == "1.11");
+    CHECK(kSpecVersion == relay::kRelaySpecVersion);
 }
 
 // ── IBus interface ────────────────────────────────────────────────────────────

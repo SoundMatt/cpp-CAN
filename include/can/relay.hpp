@@ -4,7 +4,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // relay.hpp — RELAY spec types shared across all protocol implementations.
-// Mirrors the RELAY Go package spec v0.2.
+// Local bundled copy of the RELAY core types (§13.7.3) until relay.hpp (§18.2)
+// is published as a standalone binding.
 
 #pragma once
 
@@ -13,6 +14,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -23,8 +25,9 @@ namespace relay {
 
 // ── Spec version ─────────────────────────────────────────────────────────────
 
+// The single source of truth for the targeted RELAY spec version (§19.4).
 // fusa:req REQ-RELAY-020
-inline constexpr const char* kSpecVersion = "0.2";
+inline constexpr std::string_view kRelaySpecVersion = "1.11";
 
 // ── Protocol ─────────────────────────────────────────────────────────────────
 
@@ -141,9 +144,59 @@ inline SubscriberConfig apply_options(const std::vector<SubscriberOption>& opts)
     return c;
 }
 
+// ── Context (§18.2 relay::Context) ────────────────────────────────────────────
+
+// fusa:req REQ-RELAY-060
+class Context {
+public:
+    static Context background() noexcept { return Context{}; }
+
+    static Context with_deadline(std::chrono::steady_clock::time_point d) noexcept {
+        Context c;
+        c.deadline_ = d;
+        return c;
+    }
+
+    static Context with_timeout(std::chrono::steady_clock::duration d) noexcept {
+        return with_deadline(std::chrono::steady_clock::now() + d);
+    }
+
+    bool done() const noexcept {
+        return deadline_.has_value() && std::chrono::steady_clock::now() >= *deadline_;
+    }
+
+    std::optional<std::chrono::steady_clock::time_point> deadline() const noexcept {
+        return deadline_;
+    }
+
+private:
+    std::optional<std::chrono::steady_clock::time_point> deadline_;
+};
+
+// ── Channel<T> (§18.2 relay::Channel<T>) ──────────────────────────────────────
+
+// can::Chan<T> already implements the relay::Channel<T> surface (push, recv,
+// try_recv, close, is_closed); alias it rather than duplicating the
+// implementation, per §18.2's "already implemented — alias it" convention.
+// fusa:req REQ-RELAY-061
+template<typename T>
+using Channel = can::Chan<T>;
+
+// ── SubscriberOptions (§18.2 C++ Node/Caller signature) ───────────────────────
+
+// The plain-struct C++ binding shape used by INode::subscribe(), distinct from
+// the Go-mirrored functional-options SubscriberConfig/SubscriberOption above
+// (§14.1), which remain the standard helpers for protocols that need routing
+// keys (EventID/TopicName) not applicable to CAN.
+// fusa:req REQ-RELAY-062
+struct SubscriberOptions {
+    std::size_t        channel_depth{64};
+    BackPressurePolicy back_pressure{BackPressurePolicy::DropNewest};
+};
+
 // ── INode ─────────────────────────────────────────────────────────────────────
 
-// fusa:req REQ-RELAY-013
+// fusa:req REQ-RELAY-013 REQ-RELAY-063
 class INode {
 public:
     virtual ~INode() = default;
@@ -153,23 +206,23 @@ public:
 
     // Transmits msg. Returns ErrClosed, ErrNotConnected, ErrTimeout, or
     // ErrPayloadTooLarge on failure.
-    virtual std::error_code send(Message msg) = 0;
+    virtual std::error_code send(Context ctx, const Message& msg) = 0;
 
     // Returns a channel of inbound messages. The channel is closed when the
     // node closes (REQ-RELAY-013 §6.3).
-    virtual std::pair<std::shared_ptr<can::Chan<Message>>, std::error_code>
-        subscribe(std::vector<SubscriberOption> opts = {}) = 0;
+    virtual std::pair<std::shared_ptr<Channel<Message>>, std::error_code>
+        subscribe(SubscriberOptions opts = {}) = 0;
 
     // Idempotent close (REQ-RELAY-013 §6.1).
-    virtual std::error_code close() = 0;
+    virtual std::error_code close() noexcept = 0;
 };
 
-// fusa:req REQ-RELAY-014
+// fusa:req REQ-RELAY-014 REQ-RELAY-063
 class ICaller : public INode {
 public:
     // Synchronous request/response. Returns ErrTimeout if ctx expires.
     virtual std::pair<Message, std::error_code>
-        call(Message req, std::chrono::milliseconds timeout) = 0;
+        call(Context ctx, const Message& req) = 0;
 };
 
 // ── Optional capability interfaces ───────────────────────────────────────────

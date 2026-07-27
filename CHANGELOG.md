@@ -2,6 +2,27 @@
 
 All notable changes to cpp-CAN are documented here.
 
+## [0.1.8] — 2026-07-27
+
+### Fixed
+- `relay::kSpecVersion` (now `relay::kRelaySpecVersion`) was hardcoded to `"0.2"` in both `relay.hpp` and `can.hpp`, disagreeing with the CLI's own reported `"1.10"` — collapsed to a single constant, `relay::kRelaySpecVersion = "1.11"` (RELAY spec §19.4), that `can::kSpecVersion` and the CLI's `version`/`capabilities` JSON now all derive from (closes #12, #14)
+- `capabilities`: `features` incorrectly advertised `"dbc"` and `"e2e"`, which are not spec-defined CAN feature values per §12.2's table — now `["fd","isotp","j1939"]` only. **Correction to the [0.1.6] entry below:** that release's "normalised features to spec-defined CAN values (`fd`, `isotp`, `j1939`, `dbc`, `e2e`)" was inaccurate — `dbc`/`e2e` were never spec-defined values (closes #19)
+- `version`/`status`: `--format` was accepted but ignored — always emitted JSON regardless of the flag's value, and never validated it. Both now honor `--format text|json`, render a distinct text summary for `text`, and exit `2` with `ErrUnsupportedFormat` on any other value, matching `convert`'s existing `--format` validation (closes #15)
+- README's package table documented `can/relay_adapter.hpp`, a header that has never existed — `adapt()` has always lived in `can/can.hpp`; corrected the table and added a row for `can/relay.hpp` (closes #17)
+- CMake `project()` version and the CLI's self-reported `version` field were stale at `0.1.6` although the previous release was tagged `v0.1.7`; bumped both to `0.1.8` and derived the CLI's three JSON builders from one `cli::kToolVersion` constant so they can't drift apart from each other again (closes #18)
+- CI: the `cpfusa cyber` step was wrapped in `|| true`, so an ERROR-severity cybersecurity finding could never fail the build — RELAY spec §20.1.2 requires the cybersecurity analysis to gate on ERROR findings, same as `check`/`qualify` already do. Removed the escape hatch (verified clean against a fresh checkout: 0 errors, warnings only); `vuln` already gated correctly with no change needed (progress on #9)
+
+### Added
+- `relay::Context` (background/with_deadline/with_timeout/done/deadline) and `relay::Channel<T>` (aliasing `can::Chan<T>`, which already implements push/recv/try_recv/close/is_closed) per RELAY spec §18.2
+- `relay::SubscriberOptions`, the plain-struct C++ binding shape used by `INode::subscribe()`, alongside (not replacing) the existing Go-mirrored `SubscriberConfig`/`SubscriberOption` functional-options helpers required by §14.1
+- `Frame::to_message()` member function (delegates to the existing `can::to_message()` free function) per §18.2's member-function convention
+- `send --format json`: reads `relay.Message` NDJSON on stdin and publishes each converted, validated frame until EOF (§11.2's streaming JSON sink) — the parse/convert/validate/publish pipeline (`cli::send_json_stream`) works against any `can::IBus`; the CLI currently publishes onto a fresh in-process virtual bus pending a real transport (closes #7)
+- 27 new tests covering `Context`, `Channel<T>`, `SubscriberOptions`, `--format` validation, and the `send --format json` pipeline
+
+### Changed
+- **Breaking (C++ API):** `relay::INode`/`relay::ICaller` method signatures now match RELAY spec §18.2 exactly: `send(Context, const Message&)`, `subscribe(SubscriberOptions)`, `close() noexcept`, `call(Context, const Message&)` — previously `send(Message)`, `subscribe(vector<SubscriberOption>)`, `close()`, `call(Message, milliseconds)`. `can::adapt()`'s `CanAdapter` and its tests were updated accordingly (closes #16; `can::IBus` itself — the CAN-domain, `Filter`-based interface — is unaffected)
+- Total: 126 requirements, 183 test cases
+
 ## [0.1.6] — 2026-06-19
 
 ### Fixed

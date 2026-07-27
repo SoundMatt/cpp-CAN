@@ -13,6 +13,9 @@
 
 #include <can/relay.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <chrono>
+#include <optional>
+#include <thread>
 
 using namespace relay;
 
@@ -175,10 +178,56 @@ TEST_CASE("with_topic option", "[relay][REQ-RELAY-056]") {
     CHECK(cfg.topic_name == "my.topic");
 }
 
-// ── kSpecVersion ─────────────────────────────────────────────────────────────
+// ── kRelaySpecVersion ────────────────────────────────────────────────────────
 
-TEST_CASE("kSpecVersion is non-empty", "[relay][REQ-RELAY-020]") {
-    CHECK(std::string(kSpecVersion) == "0.2");
+TEST_CASE("kRelaySpecVersion matches spec/version.json (RELAY spec 19.4)", "[relay][REQ-RELAY-020]") {
+    CHECK(std::string(kRelaySpecVersion) == "1.11");
+}
+
+// ── Context (§18.2) ────────────────────────────────────────────────────────
+
+TEST_CASE("Context::background never done, no deadline", "[relay][REQ-RELAY-060]") {
+    auto ctx = Context::background();
+    CHECK_FALSE(ctx.done());
+    CHECK_FALSE(ctx.deadline().has_value());
+}
+
+TEST_CASE("Context::with_timeout is done after the duration elapses", "[relay][REQ-RELAY-060]") {
+    auto ctx = Context::with_timeout(std::chrono::milliseconds(1));
+    CHECK(ctx.deadline().has_value());
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    CHECK(ctx.done());
+}
+
+TEST_CASE("Context::with_deadline reports the given deadline", "[relay][REQ-RELAY-060]") {
+    auto d   = std::chrono::steady_clock::now() + std::chrono::hours(1);
+    auto ctx = Context::with_deadline(d);
+    REQUIRE(ctx.deadline().has_value());
+    CHECK(*ctx.deadline() == d);
+    CHECK_FALSE(ctx.done());
+}
+
+// ── Channel<T> (§18.2) ───────────────────────────────────────────────────────
+
+TEST_CASE("Channel<T> supports push/recv/close/is_closed (RELAY spec 18.2 surface)", "[relay][REQ-RELAY-061]") {
+    Channel<int> ch(4);
+    CHECK(ch.push(1));
+    CHECK(ch.push(2));
+    CHECK_FALSE(ch.is_closed());
+    CHECK(ch.recv() == std::optional<int>(1));
+    CHECK(ch.try_recv() == std::optional<int>(2));
+    CHECK_FALSE(ch.try_recv().has_value());
+    ch.close();
+    CHECK(ch.is_closed());
+    CHECK_FALSE(ch.recv().has_value());
+}
+
+// ── SubscriberOptions (§18.2 C++ Node/Caller signature) ───────────────────────
+
+TEST_CASE("SubscriberOptions defaults per RELAY spec 18.2", "[relay][REQ-RELAY-062]") {
+    SubscriberOptions opts{};
+    CHECK(opts.channel_depth  == 64);
+    CHECK(opts.back_pressure  == BackPressurePolicy::DropNewest);
 }
 
 // ── Interface type existence ── REQ-RELAY-013 REQ-RELAY-014 ──────────────────

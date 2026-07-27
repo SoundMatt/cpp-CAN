@@ -43,6 +43,10 @@ public:
         return true;
     }
 
+    // push() is the relay::Channel<T> (§18.2) name for a blocking send.
+    // fusa:req REQ-RELAY-061
+    bool push(T value) { return send(std::move(value)); }
+
     // fusa:req REQ-SEC-013
     SendResult try_send(T value) {
         std::lock_guard<std::mutex> lk(mu_);

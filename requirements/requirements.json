@@ -140,6 +140,13 @@
     "criticality": "medium"
   },
   {
+    "id": "REQ-CAN-019",
+    "title": "Frame::to_message() member function",
+    "text": "The system shall expose Frame::to_message() as a member function performing the same lossless conversion to relay::Message as the free function can::to_message(), per RELAY spec §18.2.",
+    "category": "functional",
+    "criticality": "low"
+  },
+  {
     "id": "REQ-VIRT-001",
     "title": "Virtual bus creation",
     "text": "virt::Bus::create() shall return a non-null shared_ptr to an in-process broadcast bus.",
@@ -596,8 +603,8 @@
   },
   {
     "id": "REQ-RELAY-020",
-    "title": "kSpecVersion constant",
-    "text": "The system shall export kSpecVersion = \"0.2\".",
+    "title": "kRelaySpecVersion constant",
+    "text": "The system shall export relay::kRelaySpecVersion equal to the RELAY spec version defined in spec/version.json (\"1.11\"), as the single source of truth for every reported spec_version.",
     "category": "functional",
     "criticality": "low"
   },
@@ -684,6 +691,34 @@
     "text": "parse_protocol() shall map a protocol name (case-insensitive) to its Protocol constant and throw on unknown names.",
     "category": "functional",
     "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-060",
+    "title": "relay::Context",
+    "text": "The system shall define relay::Context per RELAY spec §18.2 with background(), with_deadline(), with_timeout() factories and done()/deadline() accessors.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-061",
+    "title": "relay::Channel<T>",
+    "text": "The system shall define relay::Channel<T> per RELAY spec §18.2 exposing push()/recv()/try_recv()/close()/is_closed(), aliasing can::Chan<T> as its implementation.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-062",
+    "title": "relay::SubscriberOptions",
+    "text": "The system shall define the plain-struct relay::SubscriberOptions (channel_depth, back_pressure) per RELAY spec §18.2, distinct from the Go-mirrored SubscriberConfig/SubscriberOption helpers (§14.1).",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-RELAY-063",
+    "title": "INode/ICaller §18.2 signatures",
+    "text": "INode::send, INode::subscribe, INode::close, and ICaller::call shall use the RELAY spec §18.2 C++ signatures: send(Context, const Message&), subscribe(SubscriberOptions), close() noexcept, call(Context, const Message&).",
+    "category": "functional",
+    "criticality": "high"
   },
   {
     "id": "REQ-SEC-001",
@@ -829,6 +864,20 @@
     "id": "REQ-CLI-006",
     "title": "CLI convert exit codes",
     "text": "The convert subcommand shall exit 0 on success, 1 on invalid input (bad JSON or frame validation failure), and 2 on invalid arguments (missing --protocol, unsupported format, unknown command).",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-CLI-007",
+    "title": "version/status --format validation",
+    "text": "The version and status subcommands shall accept --format text|json (defaulting to json), render a distinct text form when --format text is given, and exit 2 with an error message for any other --format value, per RELAY spec §11.1.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-CLI-008",
+    "title": "send --format json streaming sink",
+    "text": "The send subcommand, invoked as send --format json with no protocol flags, shall read a stream of relay.Message values as NDJSON on stdin and publish each until EOF, per RELAY spec §11.2; a line that fails to parse or convert shall cause an exit code of 1 with the sentinel error name on stderr.",
     "category": "functional",
     "criticality": "medium"
   }

@@ -59,7 +59,7 @@ TEST_CASE("adapt: send/subscribe round-trip with seq numbering", "[relay_adapter
     REQUIRE_FALSE(err);
 
     relay::Message out_msg = to_message(Frame{0x100, false, false, false, false, {0xAB, 0xCD}});
-    REQUIRE_FALSE(node->send(out_msg));
+    REQUIRE_FALSE(node->send(relay::Context::background(), out_msg));
 
     auto got = ch->recv();
     REQUIRE(got.has_value());

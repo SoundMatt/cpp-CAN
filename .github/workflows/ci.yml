@@ -233,7 +233,7 @@ jobs:
 
       - name: cpfusa cyber
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa cyber --write --dir . || true
+        run: ../cpp-FuSa/build/cpfusa cyber --write --dir .
 
       - name: cpfusa qualify (ASIL-B gate)
         working-directory: cpp-CAN

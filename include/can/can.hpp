@@ -13,6 +13,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 // fusa:req REQ-CAN-001
@@ -25,7 +26,9 @@ namespace can {
 
 // ── Spec version ─────────────────────────────────────────────────────────────
 
-inline constexpr const char* kSpecVersion = "0.2";
+// Single source of truth is relay::kRelaySpecVersion (§19.4); do not duplicate
+// the literal here.
+inline constexpr std::string_view kSpecVersion = relay::kRelaySpecVersion;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -59,6 +62,11 @@ struct Frame {
     uint8_t              vcid{};  // Virtual CAN network ID (XL only)
     uint32_t             af{};    // Acceptance Field (XL only)
     bool                 sec{};   // Simple Extended Content (XL only)
+
+    // Lossless conversion to relay::Message (§18.2 member-function convention).
+    // Delegates to the free function below.
+    // fusa:req REQ-CAN-007 REQ-CAN-015
+    relay::Message to_message() const;
 };
 
 // ── Filter ────────────────────────────────────────────────────────────────────
