@@ -47,7 +47,7 @@ TEST_CASE("capabilities_json matches RELAY spec 12.2 schema", "[cli][REQ-CLI-002
     CHECK(j.find("\"adapt\":true")           != std::string::npos);
 }
 
-TEST_CASE("capabilities_json features are limited to spec-defined CAN values (§12.2)", "[cli][REQ-CLI-002]") {
+TEST_CASE("capabilities_json features are limited to spec-defined CAN values (RELAY spec 12.2)", "[cli][REQ-CLI-002]") {
     std::string j = cli::capabilities_json();
     CHECK(j.find("\"features\":[\"fd\",\"isotp\",\"j1939\"]") != std::string::npos);
     CHECK(j.find("\"dbc\"") == std::string::npos);

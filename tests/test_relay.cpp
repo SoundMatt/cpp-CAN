@@ -180,7 +180,7 @@ TEST_CASE("with_topic option", "[relay][REQ-RELAY-056]") {
 
 // ── kRelaySpecVersion ────────────────────────────────────────────────────────
 
-TEST_CASE("kRelaySpecVersion matches spec/version.json (§19.4)", "[relay][REQ-RELAY-020]") {
+TEST_CASE("kRelaySpecVersion matches spec/version.json (RELAY spec 19.4)", "[relay][REQ-RELAY-020]") {
     CHECK(std::string(kRelaySpecVersion) == "1.11");
 }
 
@@ -209,7 +209,7 @@ TEST_CASE("Context::with_deadline reports the given deadline", "[relay][REQ-RELA
 
 // ── Channel<T> (§18.2) ───────────────────────────────────────────────────────
 
-TEST_CASE("Channel<T> supports push/recv/close/is_closed (§18.2 surface)", "[relay][REQ-RELAY-061]") {
+TEST_CASE("Channel<T> supports push/recv/close/is_closed (RELAY spec 18.2 surface)", "[relay][REQ-RELAY-061]") {
     Channel<int> ch(4);
     CHECK(ch.push(1));
     CHECK(ch.push(2));
@@ -224,7 +224,7 @@ TEST_CASE("Channel<T> supports push/recv/close/is_closed (§18.2 surface)", "[re
 
 // ── SubscriberOptions (§18.2 C++ Node/Caller signature) ───────────────────────
 
-TEST_CASE("SubscriberOptions defaults per §18.2", "[relay][REQ-RELAY-062]") {
+TEST_CASE("SubscriberOptions defaults per RELAY spec 18.2", "[relay][REQ-RELAY-062]") {
     SubscriberOptions opts{};
     CHECK(opts.channel_depth  == 64);
     CHECK(opts.back_pressure  == BackPressurePolicy::DropNewest);
