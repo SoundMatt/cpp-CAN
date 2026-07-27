@@ -9,9 +9,9 @@ RELAY-conformant — the `can::IBus` interface is stable; transports are swappab
 
 | Header | Description | Dependencies |
 |--------|-------------|--------------|
-| `can/can.hpp` | Core `IBus` interface, `Frame`, `Filter`, validation | Nothing |
+| `can/can.hpp` | Core `IBus` interface, `Frame`, `Filter`, validation, and `adapt(bus)` — wraps `IBus` as a `relay::INode` | `can/relay.hpp` |
+| `can/relay.hpp` | Local bundled RELAY core types (§13.7.3): `Protocol`, `Message`, `INode`/`ICaller`, `Context`, `Channel<T>` | Nothing |
 | `can/virtual/bus.hpp` | In-process broadcast bus — zero OS deps, default for testing | `can/can.hpp` |
-| `can/relay_adapter.hpp` | `adapt(bus)` — wraps `IBus` as a `relay::INode` | `can/relay.hpp` |
 | `can/isotp/transport.hpp` | ISO 15765-2 (ISO-TP) multi-frame transport | `can/can.hpp` |
 | `can/j1939/pgn.hpp` | SAE J1939 PGN decode/encode, extended-ID bus | `can/can.hpp` |
 | `can/safety/e2e.hpp` | E2E protection header — DataID, SourceID, SeqCounter, CRC-16 | Nothing |

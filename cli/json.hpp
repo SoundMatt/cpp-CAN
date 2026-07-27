@@ -12,9 +12,13 @@
 #include <can/relay.hpp>
 #include <algorithm>
 #include <cstdlib>
+#include <istream>
+#include <ostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -125,7 +129,76 @@ inline bool extract_bytes(const std::string& s, const std::string& key,
     return true;
 }
 
+inline bool extract_string(const std::string& s, const std::string& key, std::string& out) {
+    std::string k = "\"" + key + "\":";
+    auto p = s.find(k);
+    if (p == std::string::npos) return false;
+    p += k.size();
+    while (p < s.size() && (s[p] == ' ' || s[p] == '\t')) ++p;
+    if (p >= s.size() || s[p] != '"') return false;
+    ++p;
+    auto end = s.find('"', p);
+    if (end == std::string::npos) return false;
+    out = s.substr(p, end - p);
+    return true;
+}
+
+inline bool extract_u64(const std::string& s, const std::string& key, uint64_t& out) {
+    std::string k = "\"" + key + "\":";
+    auto p = s.find(k);
+    if (p == std::string::npos) return false;
+    p += k.size();
+    while (p < s.size() && (s[p] == ' ' || s[p] == '\t')) ++p;
+    char* end = nullptr;
+    unsigned long long v = std::strtoull(s.c_str() + p, &end, 10);
+    if (!end || end == s.c_str() + p) return false;
+    out = static_cast<uint64_t>(v);
+    return true;
+}
+
+// Parses a flat {"key":"value",...} object into a map. Values must be
+// strings — sufficient for relay.Message's Meta field (§4.3).
+inline bool extract_string_map(const std::string& s, const std::string& key,
+                                std::unordered_map<std::string, std::string>& out) {
+    std::string k = "\"" + key + "\":";
+    auto p = s.find(k);
+    if (p == std::string::npos) return false;
+    p += k.size();
+    while (p < s.size() && (s[p] == ' ' || s[p] == '\t')) ++p;
+    if (p >= s.size() || s[p] != '{') return false;
+    ++p;
+    out.clear();
+    while (p < s.size()) {
+        while (p < s.size() && (s[p]==' '||s[p]=='\t'||s[p]=='\n'||s[p]=='\r')) ++p;
+        if (p >= s.size() || s[p] == '}') break;
+        if (s[p] != '"') break;
+        ++p;
+        auto kend = s.find('"', p);
+        if (kend == std::string::npos) break;
+        std::string mk = s.substr(p, kend - p);
+        p = kend + 1;
+        while (p < s.size() && (s[p]==' '||s[p]=='\t')) ++p;
+        if (p >= s.size() || s[p] != ':') break;
+        ++p;
+        while (p < s.size() && (s[p]==' '||s[p]=='\t')) ++p;
+        if (p >= s.size() || s[p] != '"') break;
+        ++p;
+        auto vend = s.find('"', p);
+        if (vend == std::string::npos) break;
+        out[mk] = s.substr(p, vend - p);
+        p = vend + 1;
+        while (p < s.size() && (s[p]==' '||s[p]=='\t')) ++p;
+        if (p < s.size() && s[p] == ',') ++p;
+    }
+    return true;
+}
+
 } // namespace detail
+
+// Single source of truth for the CLI's self-reported implementation version.
+// Bump on every release alongside CMakeLists.txt's project() VERSION and
+// CHANGELOG.md (see #18).
+inline constexpr std::string_view kToolVersion = "0.1.8";
 
 // fusa:req REQ-CLI-004
 inline can::Frame parse_frame_json(const std::string& json) {
@@ -173,48 +246,145 @@ inline std::string message_to_json(const relay::Message& m) {
     return o.str();
 }
 
-// fusa:req REQ-CLI-001
-inline std::string version_json() {
-    return "{"
-           "\"tool\":\"cpp-CAN\","
-           "\"protocol\":\"CAN\","
-           "\"protocol_int\":1,"
-           "\"version\":\"0.1.6\","
-           "\"spec_version\":\"1.10\","
-           "\"language\":\"cpp\","
-           "\"runtime\":\"c++17\""
-           "}";
+// Parses one relay.Message JSON value (as emitted by message_to_json / the
+// NDJSON stream consumed by `send --format json`, §11.2). Throws on a
+// missing/invalid 'protocol' or 'id' field.
+// fusa:req REQ-CLI-008
+inline relay::Message parse_message_json(const std::string& json) {
+    relay::Message m{};
+    uint32_t proto{};
+    if (!detail::extract_u32(json, "protocol", proto))
+        throw std::runtime_error("ErrInvalidInput: missing or invalid 'protocol'");
+    m.protocol = static_cast<relay::Protocol>(proto);
+    if (!detail::extract_string(json, "id", m.id))
+        throw std::runtime_error("ErrInvalidInput: missing 'id'");
+    detail::extract_bytes(json, "payload", m.payload);
+    uint64_t seq{};
+    if (detail::extract_u64(json, "seq", seq)) m.seq = seq;
+    detail::extract_string_map(json, "meta", m.meta);
+    return m;
 }
 
+// Reads relay.Message values as NDJSON from `in` (one per line, per §11.2's
+// streaming JSON sink) and publishes each converted CAN frame onto `bus`
+// until EOF. Extracted from cmd_send() so the pipeline (parse → convert →
+// validate → publish) is directly unit-testable against any IBus, including
+// can::virt::Bus.
+// fusa:req REQ-CLI-008
+struct SendStreamResult {
+    int         exit_code{0};
+    std::size_t published{0};
+};
+
+inline SendStreamResult send_json_stream(std::istream& in, std::ostream& err,
+                                          const std::shared_ptr<can::IBus>& bus) {
+    SendStreamResult result;
+    std::string line;
+    while (std::getline(in, line)) {
+        if (line.find_first_not_of(" \t\r\n") == std::string::npos) continue;
+
+        relay::Message msg;
+        try {
+            msg = parse_message_json(line);
+        } catch (const std::exception& e) {
+            err << e.what() << "\n";
+            return {1, result.published};
+        }
+        if (msg.protocol != relay::Protocol::CAN) {
+            err << "ErrUnsupportedProtocol\n";
+            return {1, result.published};
+        }
+
+        can::Frame f;
+        try {
+            f = can::from_message(msg);
+            can::validate_frame(f);
+        } catch (const can::ErrInvalidFrame& e) {
+            err << "ErrInvalidInput: " << e.what() << "\n";
+            return {1, result.published};
+        }
+
+        if (auto ec = bus->send(std::move(f))) {
+            err << ec.message() << "\n";
+            return {1, result.published};
+        }
+        ++result.published;
+    }
+    return result;
+}
+
+// fusa:req REQ-CLI-001
+inline std::string version_json() {
+    std::ostringstream o;
+    o << "{"
+         "\"tool\":\"cpp-CAN\","
+         "\"protocol\":\"CAN\","
+         "\"protocol_int\":1,"
+         "\"version\":\"" << kToolVersion << "\","
+         "\"spec_version\":\"" << relay::kRelaySpecVersion << "\","
+         "\"language\":\"cpp\","
+         "\"runtime\":\"c++17\""
+         "}";
+    return o.str();
+}
+
+// fusa:req REQ-CLI-007
+inline std::string version_text() {
+    std::ostringstream o;
+    o << "cpp-CAN " << kToolVersion
+      << " (protocol=CAN spec=" << relay::kRelaySpecVersion
+      << " language=cpp runtime=c++17)";
+    return o.str();
+}
+
+// Recognized CAN feature strings per RELAY spec §12.2's per-protocol table.
+// "dbc" and "e2e" were previously advertised here but are not spec-defined
+// values for any protocol (see #19) — dropped.
 // fusa:req REQ-CLI-002
 inline std::string capabilities_json() {
-    return "{"
-           "\"kind\":\"capabilities\","
-           "\"tool\":\"cpp-CAN\","
-           "\"protocol\":\"CAN\","
-           "\"protocol_int\":1,"
-           "\"version\":\"0.1.6\","
-           "\"spec_version\":\"1.10\","
-           "\"commands\":[\"version\",\"capabilities\",\"status\",\"convert\"],"
-           "\"transports\":[\"CAN\"],"
-           "\"features\":[\"fd\",\"isotp\",\"j1939\",\"dbc\",\"e2e\"],"
-           "\"interfaces\":[\"IBus\",\"INode\",\"ICaller\"],"
-           "\"optional_interfaces\":[\"ILoaningBus\",\"IHealthProvider\",\"IMetricsProvider\",\"IDrainer\"],"
-           "\"adapt\":true"
-           "}";
+    std::ostringstream o;
+    o << "{"
+         "\"kind\":\"capabilities\","
+         "\"tool\":\"cpp-CAN\","
+         "\"protocol\":\"CAN\","
+         "\"protocol_int\":1,"
+         "\"version\":\"" << kToolVersion << "\","
+         "\"spec_version\":\"" << relay::kRelaySpecVersion << "\","
+         "\"commands\":[\"version\",\"capabilities\",\"status\",\"convert\"],"
+         "\"transports\":[\"CAN\"],"
+         "\"features\":[\"fd\",\"isotp\",\"j1939\"],"
+         "\"interfaces\":[\"IBus\",\"INode\",\"ICaller\"],"
+         "\"optional_interfaces\":[\"ILoaningBus\",\"IHealthProvider\",\"IMetricsProvider\",\"IDrainer\"],"
+         "\"adapt\":true"
+         "}";
+    return o.str();
 }
 
 // fusa:req REQ-CLI-003
 inline std::string status_json() {
-    return "{"
-           "\"protocol\":\"CAN\","
-           "\"tool\":\"cpp-CAN\","
-           "\"version\":\"0.1.6\","
-           "\"healthy\":true,"
-           "\"connected\":false,"
-           "\"endpoint\":\"\","
-           "\"details\":{}"
-           "}";
+    std::ostringstream o;
+    o << "{"
+         "\"protocol\":\"CAN\","
+         "\"tool\":\"cpp-CAN\","
+         "\"version\":\"" << kToolVersion << "\","
+         "\"healthy\":true,"
+         "\"connected\":false,"
+         "\"endpoint\":\"\","
+         "\"details\":{}"
+         "}";
+    return o.str();
+}
+
+// fusa:req REQ-CLI-007
+inline std::string status_text() {
+    std::ostringstream o;
+    o << "cpp-CAN " << kToolVersion << ": healthy (connected=false)";
+    return o.str();
+}
+
+// fusa:req REQ-CLI-007
+inline bool is_valid_output_format(const std::string& fmt) {
+    return fmt == "text" || fmt == "json";
 }
 
 } // namespace cli

@@ -72,6 +72,9 @@ relay::Message to_message(const Frame& f) {
     return m;
 }
 
+// fusa:req REQ-CAN-007 REQ-CAN-015
+relay::Message Frame::to_message() const { return can::to_message(*this); }
+
 // fusa:req REQ-CAN-015
 Frame from_message(const relay::Message& m) {
     unsigned long long id_val{};
@@ -120,7 +123,7 @@ public:
 
     relay::Protocol protocol() const noexcept override { return relay::Protocol::CAN; }
 
-    std::error_code send(relay::Message msg) override {
+    std::error_code send(relay::Context /*ctx*/, const relay::Message& msg) override {
         try {
             Frame f = from_message(msg);
             return bus_->send(std::move(f));
@@ -129,20 +132,18 @@ public:
         }
     }
 
-    std::pair<std::shared_ptr<Chan<relay::Message>>, std::error_code>
-        subscribe(std::vector<relay::SubscriberOption> opts = {}) override
+    std::pair<std::shared_ptr<relay::Channel<relay::Message>>, std::error_code>
+        subscribe(relay::SubscriberOptions opts = {}) override
     {
-        relay::SubscriberConfig cfg = relay::apply_options(opts);
-
         auto [frames, err] = bus_->subscribe({}, {});
         if (err) return {nullptr, err};
 
-        int depth = cfg.effective_depth(64);
-        auto out = std::make_shared<Chan<relay::Message>>(static_cast<std::size_t>(depth));
+        auto out = std::make_shared<relay::Channel<relay::Message>>(opts.channel_depth);
 
-        // Bridge goroutine
+        // Bridge thread — drains the underlying CAN bus channel and republishes
+        // as relay::Message, applying the requested back-pressure policy.
         std::thread([this, frames = std::move(frames), out,
-                     bp = cfg.back_pressure]() mutable
+                     bp = opts.back_pressure]() mutable
         {
             while (true) {
                 auto opt_f = frames->recv();
@@ -169,7 +170,7 @@ public:
         return {out, {}};
     }
 
-    std::error_code close() override { return bus_->close(); }
+    std::error_code close() noexcept override { return bus_->close(); }
 
 private:
     std::shared_ptr<IBus> bus_;
