@@ -188,6 +188,58 @@ jobs:
           UBSAN_OPTIONS: "halt_on_error=1:print_stacktrace=1"
         run: ctest --test-dir build-san --output-on-failure -j1
 
+  can-interop:
+    name: Live SocketCAN interop (vcan0 self-interop + can-utils third-party peer, ROADMAP.md "Interop testing")
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build
+
+      # Probe-then-skip-cleanly posture, mirroring rust-DDS's cyclone-interop
+      # job: this setup is expected to work on a stock GitHub-hosted
+      # ubuntu-22.04 runner, but ordinary CI runs must not hard-fail if a
+      # future runner image sandboxes the vcan kernel module or otherwise
+      # makes it unavailable.
+      - name: Load vcan module, bring up vcan0, install can-utils
+        id: setup
+        run: |
+          set +e
+          sudo modprobe vcan \
+            && sudo ip link add dev vcan0 type vcan \
+            && sudo ip link set up vcan0 \
+            && sudo apt-get install -y can-utils
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            echo "::notice::vcan/can-utils setup failed (exit $status) — skipping live SocketCAN interop tests"
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify vcan0 is up
+        if: steps.setup.outputs.available == 'true'
+        run: ip -details link show vcan0
+
+      - name: Configure (CPPCAN_INTEROP_TESTS=ON)
+        if: steps.setup.outputs.available == 'true'
+        run: |
+          cmake -B build-interop \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCPPCAN_INTEROP_TESTS=ON \
+            -G Ninja
+
+      - name: Build
+        if: steps.setup.outputs.available == 'true'
+        run: cmake --build build-interop --parallel
+
+      - name: Run live SocketCAN interop tests (two-process self-interop + cangen/candump third-party peer)
+        if: steps.setup.outputs.available == 'true'
+        run: ctest --test-dir build-interop --output-on-failure -j1 -L can-interop
+
   fusa-asil-b:
     name: cpp-FuSa ASIL-B qualification
     runs-on: ubuntu-22.04

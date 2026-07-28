@@ -2,6 +2,13 @@
 
 All notable changes to cpp-CAN are documented here.
 
+## [0.2.0] — 2026-07-27
+
+### Added
+- `can::socketcan::Bus` (`can/socketcan/bus.hpp`, `src/socketcan/bus.cpp`) — a real Linux SocketCAN `IBus` transport (hardware CAN or `vcan`), supporting classic CAN and CAN FD (with BRS/ESI). Mirrors go-CAN's `socketcan` package. Compiled into `cppcan_lib` automatically on Linux; no longer "future" per the README's prior placeholder. CAN XL is not yet supported by this transport (rejected by `send()`) — see ROADMAP.md
+- `ROADMAP.md`'s "Interop testing" section, plus a new live SocketCAN interop test suite validating `can::socketcan::Bus` against genuine kernel CAN traffic (not just `can::virt::Bus`): a two-process self-interop harness (`interop/can_interop_peer.cpp`, `interop/test_two_process_interop.cpp` — two real OS processes on the same real `vcan0`, field-exact ID/DLC/data/FD/BRS verification) and a third-party-peer suite against `can-utils` (`interop/test_cangen_candump_interop.cpp` — `cangen`-injected frames decoded field-exact, and `can::socketcan::Bus`-sent frames captured byte-exact by `candump -L`). Opt-in via `-DCPPCAN_INTEROP_TESTS=ON` (Linux only), run by the new `can-interop` CI job (`.github/workflows/ci.yml`), which probes `vcan`/`can-utils` availability and skips cleanly (not a hard failure) if unavailable
+- 8 new requirements, `REQ-SCAN-001` through `REQ-SCAN-008`, covering `can::socketcan::Bus` creation, FD support, send/validate, subscribe, close, and field-exact classic/FD decode
+
 ## [0.1.8] — 2026-07-27
 
 ### Fixed

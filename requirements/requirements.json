@@ -240,7 +240,7 @@
   {
     "id": "REQ-ISOTP-005",
     "title": "ISO-TP single-frame send",
-    "text": "send() shall transmit payloads of 1\u20137 bytes as a Single Frame (SF).",
+    "text": "send() shall transmit payloads of 1–7 bytes as a Single Frame (SF).",
     "category": "functional",
     "criticality": "high"
   },
@@ -457,7 +457,7 @@
   {
     "id": "REQ-DBC-006",
     "title": "VAL_ value table",
-    "text": "parse() shall read VAL_ lines and populate Signal.values with raw\u2192label mappings.",
+    "text": "parse() shall read VAL_ lines and populate Signal.values with raw→label mappings.",
     "category": "functional",
     "criticality": "low"
   },
@@ -771,14 +771,14 @@
   },
   {
     "id": "REQ-SEC-008",
-    "title": "Bus flooding \u2014 channel depth cap",
+    "title": "Bus flooding — channel depth cap",
     "text": "Each subscriber channel shall have a bounded capacity; the bus shall never allocate unbounded memory in response to a high frame rate, regardless of how many frames are produced.",
     "category": "security",
     "criticality": "high"
   },
   {
     "id": "REQ-SEC-009",
-    "title": "Bus flooding \u2014 subscriber isolation",
+    "title": "Bus flooding — subscriber isolation",
     "text": "A slow or full subscriber using DropNewest or DropOldest back-pressure shall not delay or block frame delivery to other subscribers.",
     "category": "security",
     "criticality": "high"
@@ -880,5 +880,61 @@
     "text": "The send subcommand, invoked as send --format json with no protocol flags, shall read a stream of relay.Message values as NDJSON on stdin and publish each until EOF, per RELAY spec §11.2; a line that fails to parse or convert shall cause an exit code of 1 with the sentinel error name on stderr.",
     "category": "functional",
     "criticality": "medium"
+  },
+  {
+    "id": "REQ-SCAN-001",
+    "title": "SocketCAN bus creation",
+    "text": "socketcan::Bus::create(iface) shall open a CAN_RAW socket and bind it to the named Linux network interface (hardware or vcan), returning ErrNotConnected if the socket, interface lookup, or bind fails.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SCAN-002",
+    "title": "SocketCAN FD frame support enabled by default",
+    "text": "socketcan::Bus::create() shall enable CAN FD frame send/receive (CAN_RAW_FD_FRAMES) on the socket, best-effort, without failing bus creation on classic-only interfaces that reject the option.",
+    "category": "functional",
+    "criticality": "medium"
+  },
+  {
+    "id": "REQ-SCAN-003",
+    "title": "SocketCAN send encodes and transmits real kernel frames",
+    "text": "send() shall encode a validated Frame as a kernel can_frame (classic) or canfd_frame (fd=true) and transmit it via write() on the bound socket, so it is observable by any other process/tool listening on the same interface.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SCAN-004",
+    "title": "SocketCAN send validates before transmitting",
+    "text": "send() shall call validate_frame() before writing to the socket and return ErrPayloadTooLarge without a syscall when validation fails; CAN XL frames (xl=true) shall always be rejected (not yet supported by this transport).",
+    "category": "safety",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SCAN-005",
+    "title": "SocketCAN subscribe delivers real received frames",
+    "text": "subscribe() shall return a Chan<Frame> that receives frames actually read off the bound socket by the background reader thread, filtered per the same Filter/back-pressure semantics as can::virt::Bus.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SCAN-006",
+    "title": "SocketCAN close is idempotent and unblocks readers",
+    "text": "close() shall be idempotent, join the background reader thread, close the underlying socket, and close every subscriber channel so blocked recv() callers unblock.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SCAN-007",
+    "title": "SocketCAN classic-frame decode is field-exact",
+    "text": "The reader thread shall decode a received classic can_frame into a Frame whose id (with SFF/EFF masking applied per the EFF flag), ext, rtr, and data (length-truncated to can_dlc) fields exactly match the kernel frame’s wire content.",
+    "category": "functional",
+    "criticality": "high"
+  },
+  {
+    "id": "REQ-SCAN-008",
+    "title": "SocketCAN FD-frame decode is field-exact",
+    "text": "The reader thread shall decode a received canfd_frame into a Frame with fd=true and brs/esi set exactly per the CANFD_BRS/CANFD_ESI flag bits, and data (up to 64 bytes) exactly matching the kernel frame’s payload.",
+    "category": "functional",
+    "criticality": "high"
   }
 ]
