@@ -12,6 +12,7 @@ RELAY-conformant — the `can::IBus` interface is stable; transports are swappab
 | `can/can.hpp` | Core `IBus` interface, `Frame`, `Filter`, validation, and `adapt(bus)` — wraps `IBus` as a `relay::INode` | `can/relay.hpp` |
 | `can/relay.hpp` | Local bundled RELAY core types (§13.7.3): `Protocol`, `Message`, `INode`/`ICaller`, `Context`, `Channel<T>` | Nothing |
 | `can/virtual/bus.hpp` | In-process broadcast bus — zero OS deps, default for testing | `can/can.hpp` |
+| `can/socketcan/bus.hpp` | Linux SocketCAN transport — hardware CAN or `vcan` interfaces, classic + FD | `can/can.hpp` (Linux only — see [Build](#build)) |
 | `can/isotp/transport.hpp` | ISO 15765-2 (ISO-TP) multi-frame transport | `can/can.hpp` |
 | `can/j1939/pgn.hpp` | SAE J1939 PGN decode/encode, extended-ID bus | `can/can.hpp` |
 | `can/safety/e2e.hpp` | E2E protection header — DataID, SourceID, SeqCounter, CRC-16 | Nothing |
@@ -26,6 +27,8 @@ ctest --test-dir build --output-on-failure
 ```
 
 Requires CMake ≥ 3.21 and a C++17-compliant compiler. Dependencies are fetched automatically via CMake FetchContent (Catch2, nlohmann\_json).
+
+On Linux, `can/socketcan/bus.hpp` (hardware CAN / `vcan`) is always compiled into the library — no extra flag needed, no `vcan`/`can-utils` required just to *build*. The live interop test suite that actually exercises it against a real `vcan0` interface is opt-in — see [Interop testing](#interop-testing).
 
 ## Quick start
 
@@ -52,7 +55,8 @@ bus->close();
 auto bus = can::virt::Bus::create();
 
 // Linux SocketCAN — hardware or vcan0:
-// (future: can/socketcan/bus.hpp)
+#include <can/socketcan/bus.hpp>
+auto [bus, err] = can::socketcan::Bus::create("vcan0"); // or "can0" for real hardware
 ```
 
 ## ISO-TP
@@ -85,6 +89,26 @@ can::safety::Receiver  receiver {{.data_id = 0x0001, .source_id = 0x0010}};
 
 auto protected_payload = protector.protect(raw);
 auto [payload, err]    = receiver.unwrap(protected_payload);
+```
+
+## Interop testing
+
+`can::socketcan::Bus` is validated against genuine kernel CAN traffic, not just its own unit tests — see `ROADMAP.md`'s "Interop testing" section and the `can-interop` CI job (`.github/workflows/ci.yml`):
+
+- **Two-process self-interop** (`interop/test_two_process_interop.cpp`) — two real `cpp-can-interop-peer` OS processes (`interop/can_interop_peer.cpp`) bound to the same real `vcan0` interface, one sending real CAN/CAN-FD frames via `can::IBus`, the other receiving and verifying field-exact correctness (ID, DLC, data, FD/BRS flags).
+- **Third-party-peer interop** (`interop/test_cangen_candump_interop.cpp`) — Linux's own `can-utils` (`cangen`/`candump`), an entirely independent codebase, as the oracle: `cangen`-injected frames decoded field-exact by `can::socketcan::Bus`, and frames sent via `can::socketcan::Bus` captured byte-exact by `candump -L`.
+
+Both are opt-in (`-DCPPCAN_INTEROP_TESTS=ON`, Linux only) and require a real `vcan0` interface:
+
+```bash
+sudo modprobe vcan
+sudo ip link add dev vcan0 type vcan
+sudo ip link set up vcan0
+sudo apt-get install -y can-utils
+
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCPPCAN_INTEROP_TESTS=ON
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure -L can-interop
 ```
 
 ## Philosophy

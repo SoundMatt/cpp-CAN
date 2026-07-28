@@ -1,0 +1,76 @@
+# cpp-CAN roadmap
+
+## Interop testing — beyond unit tests against `can::virt::Bus`
+
+Every existing test in `tests/` runs against `can::virt::Bus`, an in-process
+broadcast bus with zero OS dependencies. That is the right default for
+day-to-day development (fast, deterministic, portable to every OS in the
+`build-and-test` CI matrix), but it proves nothing about whether cpp-CAN's
+real transport — `can::socketcan::Bus` (Linux SocketCAN, hardware or `vcan`)
+— actually decodes and encodes genuine kernel CAN traffic correctly. A bug
+in `can_frame`/`canfd_frame` byte layout, ID flag masking, or the
+CAN_RAW_FD_FRAMES handshake would be invisible to `can::virt::Bus`-only
+tests and only show up against a real interface.
+
+Unlike a DDS/RTPS implementation (which needs a second, independently
+maintained protocol stack — e.g. rust-DDS's live CycloneDDS peer — as a
+"did we and the peer share the same misreading of the spec" check), CAN has
+no equivalent third-party *implementation* to test against: the wire format
+is a kernel driver interface (SocketCAN), not a negotiated application
+protocol. The real independent oracle here is the Linux kernel's own SocketCAN
+subsystem itself, plus `can-utils` (`candump`/`cangen`/`cansend`) — an
+entirely separate, upstream-maintained codebase
+(github.com/linux-can/can-utils) from cpp-CAN.
+
+**Done — both deliverables**, landed as a new `can-interop` CI job
+(`.github/workflows/ci.yml`), gated behind `-DCPPCAN_INTEROP_TESTS=ON`
+(Linux only — see `interop/CMakeLists.txt`) so it is absent from the
+default cross-platform `build-and-test` matrix:
+
+- **Live two-process self-interop** (`interop/test_two_process_interop.cpp`)
+  — two real, independent OS processes of `cpp-can-interop-peer`
+  (`interop/can_interop_peer.cpp`, a `[[bin]]`-equivalent test-support
+  target, not part of the public library API), each driven entirely by the
+  real, production `can::socketcan::Bus` machinery (real `CAN_RAW` socket,
+  real bind to `vcan0`, real background reader thread — no test-only
+  shortcuts). One process sends real classic-CAN and CAN-FD (with BRS)
+  frames via the RELAY-conformant `can::IBus` API; the other receives and
+  the test asserts field-exact correctness (ID, DLC/length, data bytes, FD
+  and BRS flags) between what the writer process actually wrote to its own
+  socket and what the reader process actually decoded off of its own real
+  vcan0 socket — genuine kernel-level CAN traffic crossing a process
+  boundary, not two `can::virt::Bus` handles inside one test binary.
+- **Third-party-peer interop against `can-utils`**
+  (`interop/test_cangen_candump_interop.cpp`) — Linux's own SocketCAN kernel
+  subsystem plus `can-utils` as the independent validator, in both
+  directions: `cangen` (fixed `-I`/`-L`/`-D` args, so its output is fully
+  deterministic) injects frames onto `vcan0` that `can::socketcan::Bus`'s
+  receive path must decode field-exact against exactly what `cangen` was
+  told to send; and `can::socketcan::Bus::send()` transmits a known frame
+  that `candump -L vcan0` — a wholly separate process and codebase —
+  captures, with the test asserting the captured log line's ID/data hex
+  matches the expected CAN wire encoding byte-for-byte.
+
+CI posture (`.github/workflows/ci.yml`'s `can-interop` job): loads the
+`vcan` kernel module, brings up a real `vcan0` interface, and installs
+`can-utils`, each step probed rather than assumed — if any of that setup
+fails (e.g. a sandboxed runner lacking the `vcan` module), the job emits an
+`::notice::` and exits 0 (skips cleanly) instead of hard-failing, the same
+probe-then-skip posture as rust-DDS's `cyclone-interop` job uses for its own
+environment-dependent live-peer dependency. Once setup succeeds, the build
+and test steps are expected to pass unconditionally (unlike a third-party
+Docker image that might simply not be pullable, `can-utils` is an
+`apt-get install` away and does not carry that same flakiness risk).
+
+### Not yet in scope
+
+- **CAN XL over SocketCAN** — `can::socketcan::Bus` rejects `Frame{xl=true}`
+  at `send()`. `CAN_RAW` support for `CANXL_XLF` is a very recent kernel
+  feature not guaranteed present on common CI/production kernels, and
+  go-CAN's own `socketcan` package (the reference `can::socketcan::Bus`
+  mirrors) does not support it either. Classic CAN and CAN FD are fully
+  supported and covered by the interop suite above.
+- **Hardware-in-the-loop testing** — the interop suite above runs entirely
+  against `vcan` (virtual CAN), matching CI's constraints. A real CAN
+  transceiver/hardware run is out of scope for this repo's CI and would need
+  a self-hosted runner with attached hardware.
