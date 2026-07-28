@@ -151,7 +151,7 @@ jobs:
         run: go install github.com/SoundMatt/RELAY/cmd/relay@latest
 
       - name: RELAY conformance gate
-        run: relay conform ./build/cli/cpp-can-cli --strict
+        run: relay conform --strict ./build/cli/cpp-can-cli
 
       - name: RELAY interop gate (§20 Continuous Conformance)
         run: relay interop --protocol CAN ./build/cli/cpp-can-cli
