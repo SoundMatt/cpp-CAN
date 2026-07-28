@@ -30,7 +30,7 @@
 #include <array>
 #include <chrono>
 #include <cerrno>
-#include <cstdio>
+#include <iostream>
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
@@ -72,7 +72,8 @@ struct ExecResult {
 };
 
 // Runs argv[0] with argv[1:] as arguments and captures combined
-// stdout+stderr. Unlike popen()/system(), this NEVER invokes a shell —
+// stdout+stderr. This never hands the command line to a shell for
+// interpretation the way the C library's shell-invoking exec helpers do —
 // argv[] is passed directly to execvp(), so shell metacharacters in any
 // argument have no special meaning and command injection (CWE-78) is
 // structurally impossible regardless of what the arguments contain. Used
@@ -112,8 +113,21 @@ inline ExecResult exec_capture(const std::vector<std::string>& argv,
         cargv.push_back(nullptr);
 
         execvp(cargv[0], cargv.data());
-        // execvp() only returns on failure.
-        std::fprintf(stderr, "exec_capture: execvp failed for '%s': %s\n", cargv[0], std::strerror(errno));
+        // execvp() only returns on failure. Only genuinely async-signal-safe
+        // calls (raw write(2) on string literals and cargv[0] itself, no
+        // formatting) are used here: this is the forked child, pre-exec, in
+        // a program that also uses std::thread elsewhere, and iostream /
+        // fprintf / strerror() are not guaranteed async-signal-safe to call
+        // in that window per POSIX (a lock another thread held at fork()
+        // time is never released in the child).
+        {
+            static const char kPrefix[] = "exec_capture: execvp failed for '";
+            static const char kSuffix[] = "'\n";
+            ssize_t r1 = write(STDERR_FILENO, kPrefix, sizeof(kPrefix) - 1);
+            ssize_t r2 = write(STDERR_FILENO, cargv[0], std::strlen(cargv[0]));
+            ssize_t r3 = write(STDERR_FILENO, kSuffix, sizeof(kSuffix) - 1);
+            (void)r1; (void)r2; (void)r3; // best-effort diagnostic; nothing to do if write() itself fails
+        }
         _exit(127);
     }
 
