@@ -29,9 +29,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <array>
 #include <chrono>
-#include <cstdio>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -53,47 +51,42 @@ struct PeerResult {
     bool                     summary_seen{false};
 };
 
-// Runs can_interop_peer with `args`, capturing stdout line-by-line via
-// popen(3) (this is test-support code, not the library itself — no need to
-// match cli/'s no-libc-shellout convention). Every "kind":"frame" line
+// Runs can_interop_peer with `args`, capturing its combined stdout+stderr
+// via caninterop::exec_capture (fork()/execvp(), no shell — see that
+// function's doc comment in interop_common.hpp). Every "kind":"frame" line
 // becomes a FrameRecord in order; the final "kind":"summary" line becomes
 // PeerResult::summary.
 PeerResult run_peer(const std::vector<std::string>& args) {
-    std::ostringstream cmd;
-    cmd << "\"" << CPPCAN_INTEROP_PEER_BIN << "\"";
-    for (const auto& a : args) cmd << " " << a;
-    cmd << " 2>&1"; // fold stderr in so a crash/usage error is visible in output
+    std::vector<std::string> argv{CPPCAN_INTEROP_PEER_BIN};
+    argv.insert(argv.end(), args.begin(), args.end());
 
-    FILE* pipe = popen(cmd.str().c_str(), "r");
-    if (!pipe) throw std::runtime_error("popen failed for: " + cmd.str());
+    auto exec_result = caninterop::exec_capture(argv);
 
     PeerResult result;
-    std::array<char, 4096> buf{};
-    std::string pending;
-    while (std::fgets(buf.data(), static_cast<int>(buf.size()), pipe) != nullptr) {
-        pending += buf.data();
-        std::size_t nl;
-        while ((nl = pending.find('\n')) != std::string::npos) {
-            std::string line = pending.substr(0, nl);
-            pending.erase(0, nl + 1);
+    std::string pending = exec_result.output;
+    std::size_t nl;
+    while ((nl = pending.find('\n')) != std::string::npos) {
+        std::string line = pending.substr(0, nl);
+        pending.erase(0, nl + 1);
 
-            FrameRecord fr;
-            Summary sm;
-            if (caninterop::parse_summary_json_line(line, sm)) {
-                result.summary = sm;
-                result.summary_seen = true;
-            } else if (caninterop::parse_frame_json_line(line, fr)) {
-                result.frames.push_back(fr);
-            }
-            // Anything else (e.g. a stray stderr line) is ignored — the
-            // NDJSON contract only requires the "frame"/"summary" lines.
+        FrameRecord fr;
+        Summary sm;
+        if (caninterop::parse_summary_json_line(line, sm)) {
+            result.summary = sm;
+            result.summary_seen = true;
+        } else if (caninterop::parse_frame_json_line(line, fr)) {
+            result.frames.push_back(fr);
         }
+        // Anything else (e.g. a stray stderr line) is ignored — the
+        // NDJSON contract only requires the "frame"/"summary" lines.
     }
-    pclose(pipe);
 
     if (!result.summary_seen) {
+        std::ostringstream cmd;
+        for (const auto& a : argv) cmd << a << " ";
         throw std::runtime_error("can_interop_peer (cmd=" + cmd.str() +
-                                  ") produced no \"kind\":\"summary\" line");
+                                  ") produced no \"kind\":\"summary\" line; output=" +
+                                  exec_result.output);
     }
     return result;
 }

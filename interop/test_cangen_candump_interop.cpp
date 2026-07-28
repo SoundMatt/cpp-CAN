@@ -33,34 +33,17 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <array>
 #include <chrono>
-#include <cstdio>
 #include <iomanip>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
 
+using caninterop::exec_capture;
 using caninterop::hex_encode;
 
 namespace {
-
-// Runs `cmd` via popen(3), capturing combined stdout+stderr as a single
-// string. Test-support code only (not the library) — a plain popen() is
-// adequate here, matching the two-process interop test's own helper.
-std::string run_and_capture(const std::string& cmd) {
-    FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) throw std::runtime_error("popen failed for: " + cmd);
-    std::string out;
-    std::array<char, 4096> buf{};
-    while (std::fgets(buf.data(), static_cast<int>(buf.size()), pipe) != nullptr) {
-        out += buf.data();
-    }
-    pclose(pipe);
-    return out;
-}
 
 // 3-hex-digit, zero-padded, uppercase standard (SFF) CAN ID, matching
 // can-utils' own `put_sff_id()` log-format convention exactly (lib.c) —
@@ -95,14 +78,17 @@ TEST_CASE("cpp-CAN's SocketCAN receiver decodes cangen-injected frames field-exa
     auto [ch, sub_ec] = bus->subscribe({can::Filter{kId, can::kCANMaxExtID}});
     REQUIRE_FALSE(sub_ec);
 
-    // cangen exits on its own after -n frames (bounded further by `timeout`
-    // as a hard backstop against any upstream can-utils hang).
-    std::ostringstream cmd;
-    cmd << "timeout 20 cangen -I " << sff_id_hex(kId)
-        << " -L 8 -D " << kDataHex
-        << " -g 5 -n " << kCount << " vcan0 2>&1";
-    std::string cangen_output = run_and_capture(cmd.str());
+    // cangen exits on its own after -n frames (bounded further by the
+    // exec_capture timeout as a hard backstop against any upstream
+    // can-utils hang). argv vector, no shell — see exec_capture's doc
+    // comment in interop_common.hpp.
+    auto cangen_result = exec_capture(
+        {"cangen", "-I", sff_id_hex(kId), "-L", "8", "-D", kDataHex,
+         "-g", "5", "-n", std::to_string(kCount), "vcan0"},
+        std::chrono::seconds(20));
+    std::string cangen_output = cangen_result.output;
     INFO("cangen output: " << cangen_output);
+    INFO("cangen timed out: " << (cangen_result.timed_out ? "true" : "false"));
 
     std::vector<can::Frame> received;
     auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
@@ -143,7 +129,8 @@ TEST_CASE("candump -L captures cpp-CAN-sent frames with the exact expected wire 
     // about, bounded by `timeout` as a hard backstop.
     std::string candump_output;
     std::thread candump_thread([&] {
-        candump_output = run_and_capture("timeout 15 candump -L -n 1 vcan0 2>&1");
+        auto result = exec_capture({"candump", "-L", "-n", "1", "vcan0"}, std::chrono::seconds(15));
+        candump_output = result.output;
     });
     // Joins candump_thread on scope exit even if a REQUIRE below fails
     // first — std::thread's destructor calls std::terminate() on a
