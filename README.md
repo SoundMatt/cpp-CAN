@@ -26,7 +26,7 @@ cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
-Requires CMake ≥ 3.21 and a C++17-compliant compiler. Dependencies are fetched automatically via CMake FetchContent (Catch2, nlohmann\_json).
+Requires CMake ≥ 3.21 and a C++17-compliant compiler. Catch2 is fetched automatically via CMake FetchContent. The CLI's JSON handling uses a small vendored parser (`cli/json.hpp`) rather than a fetched `nlohmann_json` dependency.
 
 On Linux, `can/socketcan/bus.hpp` (hardware CAN / `vcan`) is always compiled into the library — no extra flag needed, no `vcan`/`can-utils` required just to *build*. The live interop test suite that actually exercises it against a real `vcan0` interface is opt-in — see [Interop testing](#interop-testing).
 
