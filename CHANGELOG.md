@@ -2,6 +2,28 @@
 
 All notable changes to cpp-CAN are documented here.
 
+## [0.2.3] — 2026-07-29
+
+### Fixed
+- `relay::kRelaySpecVersion` was hardcoded to `"1.11"`, three minor releases
+  behind RELAY's actual current, *reachable* spec version. RELAY has since
+  tagged a breaking `v2.0.0` (RCP TC18 canonical types), but that release
+  doesn't apply here — it's scoped entirely to §15.5's RCP canonical types,
+  and cpp-CAN implements the CAN protocol only (no RCP module) — and isn't
+  even reachable via `go install .../relay@latest` (the method CI and this
+  repo's README use) as of this writing: RELAY's `go.mod` wasn't updated to
+  the `/v2` module-path suffix Go's semantic-import-versioning rules require
+  for a v2+ tag, so `go install`/`go get` both still silently resolve to
+  `v1.14.0`; a binary built directly from the `v2.0.0` git tag (bypassing
+  `go install`) still reports `SpecVersion = "1.14"` internally, confirming
+  the tag predates that constant being bumped. Filed upstream:
+  SoundMatt/RELAY#71. Bumped `kRelaySpecVersion` to `"1.14"` — the actual
+  current, reachable, relevant spec version — and updated the matching
+  literal in `requirements/requirements.json` (REQ-RELAY-020) and 3 test
+  assertions. Reverified `relay conform --strict` and `relay interop --strict`
+  PASS against both the `go install`-resolved tool (1.14.0) and a binary
+  built from the `v2.0.0` tag (closes #32)
+
 ## [0.2.0] — 2026-07-27
 
 ### Added

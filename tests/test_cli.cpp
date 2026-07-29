@@ -17,7 +17,7 @@ using namespace cli;
 
 TEST_CASE("version_json matches RELAY spec 12.1 schema", "[cli][REQ-CLI-001]") {
     std::string j = cli::version_json();
-    CHECK(j.find("\"spec_version\":\"1.11\"") != std::string::npos);
+    CHECK(j.find("\"spec_version\":\"1.14\"") != std::string::npos);
     CHECK(j.find("\"tool\":\"cpp-CAN\"")     != std::string::npos);
     CHECK(j.find("\"protocol\":\"CAN\"")     != std::string::npos);
     CHECK(j.find("\"protocol_int\":1")       != std::string::npos);
@@ -30,13 +30,13 @@ TEST_CASE("version_text is a human-readable summary, not JSON", "[cli][REQ-CLI-0
     std::string t = cli::version_text();
     CHECK(t.find("cpp-CAN") != std::string::npos);
     CHECK(t.find(std::string(cli::kToolVersion)) != std::string::npos);
-    CHECK(t.find("1.11") != std::string::npos);
+    CHECK(t.find("1.14") != std::string::npos);
     CHECK(t.find('{') == std::string::npos);
 }
 
 TEST_CASE("capabilities_json matches RELAY spec 12.2 schema", "[cli][REQ-CLI-002]") {
     std::string j = cli::capabilities_json();
-    CHECK(j.find("\"spec_version\":\"1.11\"") != std::string::npos);
+    CHECK(j.find("\"spec_version\":\"1.14\"") != std::string::npos);
     CHECK(j.find("\"kind\":\"capabilities\"") != std::string::npos);
     CHECK(j.find("\"protocol\":\"CAN\"")     != std::string::npos);
     CHECK(j.find("\"protocol_int\":1")       != std::string::npos);

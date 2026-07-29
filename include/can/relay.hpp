@@ -26,8 +26,26 @@ namespace relay {
 // ── Spec version ─────────────────────────────────────────────────────────────
 
 // The single source of truth for the targeted RELAY spec version (§19.4).
+//
+// Not "2.0": RELAY v2.0.0 (spec/version.json "2.0") is a MAJOR breaking
+// release that replaces §15.5's RCP canonical types with the real OPEN
+// Alliance TC18 protocol — it does not touch the CAN canonical types cpp-CAN
+// implements, and is not reachable via `go install .../relay@latest` as of
+// this writing: RELAY's own go.mod was not updated to the `/v2` module-path
+// suffix Go's module-versioning rules require for a v2+ tag, so `go install`
+// (as CI's relay-conform job uses) and `go get` both still resolve to
+// v1.14.0 regardless (confirmed: building relay directly from the v2.0.0 git
+// tag still reports `relay.SpecVersion = "1.14"` internally — the tag itself
+// predates that constant being bumped). Filed upstream:
+// https://github.com/SoundMatt/RELAY/issues/71 (go.mod /v2 path + SpecVersion
+// const both need fixing before a v2.0.0-targeting pin is meaningful here).
+// "1.14" is the actual current, reachable, and relevant spec version:
+// verified via `relay conform --strict` and `relay interop --strict` against
+// both `go install .../relay@latest` (resolves to 1.14.0) and a binary built
+// directly from the v2.0.0 tag — both PASS.
+//
 // fusa:req REQ-RELAY-020
-inline constexpr std::string_view kRelaySpecVersion = "1.11";
+inline constexpr std::string_view kRelaySpecVersion = "1.14";
 
 // ── Protocol ─────────────────────────────────────────────────────────────────
 
