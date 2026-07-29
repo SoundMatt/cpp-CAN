@@ -198,7 +198,7 @@ inline bool extract_string_map(const std::string& s, const std::string& key,
 // Single source of truth for the CLI's self-reported implementation version.
 // Bump on every release alongside CMakeLists.txt's project() VERSION and
 // CHANGELOG.md (see #18).
-inline constexpr std::string_view kToolVersion = "0.2.0";
+inline constexpr std::string_view kToolVersion = "0.2.3";
 
 // fusa:req REQ-CLI-004
 inline can::Frame parse_frame_json(const std::string& json) {

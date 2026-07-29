@@ -181,7 +181,7 @@ TEST_CASE("with_topic option", "[relay][REQ-RELAY-056]") {
 // ── kRelaySpecVersion ────────────────────────────────────────────────────────
 
 TEST_CASE("kRelaySpecVersion matches spec/version.json (RELAY spec 19.4)", "[relay][REQ-RELAY-020]") {
-    CHECK(std::string(kRelaySpecVersion) == "1.11");
+    CHECK(std::string(kRelaySpecVersion) == "1.14");
 }
 
 // ── Context (§18.2) ────────────────────────────────────────────────────────
