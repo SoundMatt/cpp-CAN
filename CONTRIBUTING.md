@@ -84,6 +84,19 @@ Add the requirement to `requirements/requirements.json` using the format:
 }
 ```
 
+`.fusa-reqs.json` (cpfusa's machine-readable traceability file) is *derived*
+from `requirements/requirements.json` and a source scan for `fusa:req`/
+`fusa:test` annotations — never hand-edit it. Regenerate it after adding or
+annotating requirements:
+
+```bash
+python3 scripts/gen_fusa_reqs.py
+```
+
+CI also runs this before every `cpfusa` invocation, so a forgotten local
+regeneration won't cause CI to see stale data — but keep it in sync locally
+too so `git diff` reviews are meaningful.
+
 ## Pull request checklist
 
 - [ ] All tests pass: `ctest --test-dir build --output-on-failure -j1`

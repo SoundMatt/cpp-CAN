@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  release:
+    types: [published]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -154,7 +156,7 @@ jobs:
         run: relay conform --strict ./build/cli/cpp-can-cli
 
       - name: RELAY interop gate (§20 Continuous Conformance)
-        run: relay interop --protocol CAN ./build/cli/cpp-can-cli
+        run: relay interop --protocol CAN --strict ./build/cli/cpp-can-cli
 
   sanitizers:
     name: ASan + UBSan (IEC 61508 SIL-2 dynamic analysis)
@@ -214,7 +216,12 @@ jobs:
           status=$?
           set -e
           if [ "$status" -ne 0 ]; then
-            echo "::notice::vcan/can-utils setup failed (exit $status) — skipping live SocketCAN interop tests"
+            echo "::warning title=Live SocketCAN interop SKIPPED::vcan/can-utils setup failed (exit $status) on this runner — 0 live SocketCAN interop tests were executed this run. See ROADMAP.md 'Interop testing' and issue #30."
+            {
+              echo "### :warning: Live SocketCAN interop SKIPPED"
+              echo
+              echo "\`vcan\`/\`can-utils\` setup failed (exit \`$status\`) on this runner, so **0 live SocketCAN interop tests ran this job** — only the skip path executed. This is a known GitHub-hosted-runner kernel limitation (the \`vcan\` module is absent), not a code regression. See ROADMAP.md and #30."
+            } >> "$GITHUB_STEP_SUMMARY"
             echo "available=false" >> "$GITHUB_OUTPUT"
           else
             echo "available=true" >> "$GITHUB_OUTPUT"
@@ -240,10 +247,31 @@ jobs:
         if: steps.setup.outputs.available == 'true'
         run: ctest --test-dir build-interop --output-on-failure -j1 -L can-interop
 
+      - name: Live-path summary
+        if: steps.setup.outputs.available == 'true'
+        run: |
+          echo "### :white_check_mark: Live SocketCAN interop ran (real \`vcan0\` traffic)" >> "$GITHUB_STEP_SUMMARY"
+
   fusa-asil-b:
     name: cpp-FuSa ASIL-B qualification
     runs-on: ubuntu-22.04
     needs: build-and-test
+    permissions:
+      contents: write
+    env:
+      # cpp-FuSa version pin (§20.1.2 — an explicit, identical tag everywhere
+      # cpp-FuSa is checked out; never a floating branch/@latest). Bump
+      # deliberately, verifying the ASIL-B pipeline still passes, on a cadence
+      # tied to cpp-FuSa releases.
+      CPP_FUSA_REF: v0.17.1
+      # Current, disclosed ISO 26262 / IEC 61508 Part 6 gap-report baseline
+      # (see "Enforce gap-report baselines" below) — tracked in #36. Lower
+      # these as real safety-lifecycle documentation (architectural design,
+      # unit design/verification/test records, safety manual, configuration
+      # management plan, ASIL decomposition, verification independence) is
+      # added; CI fails if the gap count regresses above the baseline.
+      ISO26262_GAP_BASELINE: 12
+      IEC61508_GAP_BASELINE: 10
     steps:
       - name: Check out cpp-CAN
         uses: actions/checkout@v4
@@ -254,7 +282,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: SoundMatt/cpp-FuSa
-          ref: v0.15.0
+          ref: ${{ env.CPP_FUSA_REF }}
           path: cpp-FuSa
 
       - name: Install tools
@@ -268,9 +296,19 @@ jobs:
             -G Ninja
           cmake --build cpp-FuSa/build --parallel
 
-      - name: cpfusa init
+      - name: Generate .fusa-reqs.json from requirements/requirements.json
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa init --name cpp-CAN --standard iso26262 --asil ASIL-B --project-version 0.1.0 --force || true
+        run: python3 scripts/gen_fusa_reqs.py
+
+      # No --force: .fusa.json and .fusa-reqs.json are real, committed
+      # project config/evidence, not scaffolding — cpfusa init --force
+      # unconditionally resets .fusa-reqs.json to {"requirements":[]} even
+      # when it already has content (§9.1 "create with empty requirements
+      # array"), which is exactly why traceability was always 0% (#26).
+      # Without --force this is a no-op once the files exist (exit 0).
+      - name: cpfusa init (no-op once .fusa.json/.fusa-reqs.json exist)
+        working-directory: cpp-CAN
+        run: ../cpp-FuSa/build/cpfusa init --name cpp-CAN --standard iso26262 --asil ASIL-B --project-version 0.1.0
 
       - name: cpfusa check
         working-directory: cpp-CAN
@@ -278,7 +316,7 @@ jobs:
 
       - name: cpfusa lint
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa lint --dir . || true
+        run: ../cpp-FuSa/build/cpfusa lint --dir .
 
       - name: cpfusa trace (requirements traceability)
         working-directory: cpp-CAN
@@ -292,26 +330,16 @@ jobs:
         working-directory: cpp-CAN
         run: ../cpp-FuSa/build/cpfusa qualify --dir .
 
-      - name: cpfusa hara init
+      - name: cpfusa hara init (no-op once .fusa-hara.json exists)
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa hara init --project cpp-CAN --dir . || true
+        run: ../cpp-FuSa/build/cpfusa hara init --project cpp-CAN --dir .
 
-      - name: cpfusa iso26262 (ASIL-B)
-        working-directory: cpp-CAN
-        run: |
-          ../cpp-FuSa/build/cpfusa iso26262 \
-            --asil ASIL-B \
-            --output iso26262-gap-report.json \
-            --dir . || true
-
-      - name: cpfusa iec61508 (SIL-2)
-        working-directory: cpp-CAN
-        run: |
-          ../cpp-FuSa/build/cpfusa iec61508 \
-            --sil SIL-2 \
-            --output iec61508-gap-report.json \
-            --dir . || true
-
+      # Evidence-generating steps run BEFORE iso26262/iec61508 below, not
+      # after: the gap reports look for tara.json/fmea.json/safety-case.json/
+      # sci.json/etc on disk, so running them afterwards (the previous step
+      # order) meant the gap checks always saw those artifacts as absent —
+      # inflating "gap" to "gap" instead of "addressed"/"partial" — before a
+      # single real gap had been assessed.
       - name: cpfusa boundary
         working-directory: cpp-CAN
         run: ../cpp-FuSa/build/cpfusa boundary --dir .
@@ -336,6 +364,59 @@ jobs:
         working-directory: cpp-CAN
         run: ../cpp-FuSa/build/cpfusa sci --dir .
 
+      # iso26262/iec61508 report a real, substantive backlog of ISO 26262
+      # Part 6 / IEC 61508 lifecycle documentation this project does not yet
+      # have (architectural design, unit verification/test records, safety
+      # manual, etc. — see #36) — that is not something to fabricate in CI.
+      # continue-on-error keeps the step's own red "X" visible in the GitHub
+      # Actions UI (unlike `|| true`, which hid it entirely) while the
+      # baseline-gate step below still fails the job on a real regression.
+      - name: cpfusa iso26262 (ASIL-B)
+        id: iso26262
+        working-directory: cpp-CAN
+        continue-on-error: true
+        run: |
+          ../cpp-FuSa/build/cpfusa iso26262 \
+            --asil ASIL-B \
+            --output iso26262-gap-report.json \
+            --dir .
+
+      - name: Enforce ISO 26262 gap-report baseline (tracked in #36)
+        working-directory: cpp-CAN
+        run: |
+          gap=$(python3 -c "import json;print(sum(1 for o in json.load(open('iso26262-gap-report.json'))['objectives'] if o['status']=='gap'))")
+          echo "ISO 26262 gaps: $gap (baseline: ${ISO26262_GAP_BASELINE})"
+          if [ "$gap" -gt "${ISO26262_GAP_BASELINE}" ]; then
+            echo "::error::ISO 26262 gap count regressed: $gap > baseline ${ISO26262_GAP_BASELINE} — see #36"
+            exit 1
+          fi
+          if [ "$gap" -lt "${ISO26262_GAP_BASELINE}" ]; then
+            echo "::notice::ISO 26262 gap count improved ($gap < baseline ${ISO26262_GAP_BASELINE}) — lower ISO26262_GAP_BASELINE in ci.yml"
+          fi
+
+      - name: cpfusa iec61508 (SIL-2)
+        id: iec61508
+        working-directory: cpp-CAN
+        continue-on-error: true
+        run: |
+          ../cpp-FuSa/build/cpfusa iec61508 \
+            --sil SIL-2 \
+            --output iec61508-gap-report.json \
+            --dir .
+
+      - name: Enforce IEC 61508 gap-report baseline (tracked in #36)
+        working-directory: cpp-CAN
+        run: |
+          gap=$(python3 -c "import json;print(sum(1 for o in json.load(open('iec61508-gap-report.json'))['objectives'] if o['status']=='gap'))")
+          echo "IEC 61508 gaps: $gap (baseline: ${IEC61508_GAP_BASELINE})"
+          if [ "$gap" -gt "${IEC61508_GAP_BASELINE}" ]; then
+            echo "::error::IEC 61508 gap count regressed: $gap > baseline ${IEC61508_GAP_BASELINE} — see #36"
+            exit 1
+          fi
+          if [ "$gap" -lt "${IEC61508_GAP_BASELINE}" ]; then
+            echo "::notice::IEC 61508 gap count improved ($gap < baseline ${IEC61508_GAP_BASELINE}) — lower IEC61508_GAP_BASELINE in ci.yml"
+          fi
+
       - name: cpfusa badge
         working-directory: cpp-CAN
         run: ../cpp-FuSa/build/cpfusa badge --dir .
@@ -343,6 +424,10 @@ jobs:
       - name: cpfusa vuln
         working-directory: cpp-CAN
         run: ../cpp-FuSa/build/cpfusa vuln --dir .
+
+      - name: cpfusa release (SBOM + provenance + artifact manifest — §20.5)
+        working-directory: cpp-CAN
+        run: ../cpp-FuSa/build/cpfusa release --dir .
 
       - name: cpfusa metrics record
         working-directory: cpp-CAN
@@ -360,6 +445,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: asil-b-evidence
+          if-no-files-found: error
           path: |
             cpp-CAN/check-report.json
             cpp-CAN/qualify-report.json
@@ -385,6 +471,25 @@ jobs:
             cpp-CAN/boundary.dot
             cpp-CAN/.fusa-hara.json
             cpp-CAN/.fusa-metrics.json
+
+      # §20.5: attach the supply-chain evidence to the GitHub Release itself,
+      # not just this ephemeral, retention-windowed CI-run artifact bundle —
+      # a downstream consumer of a release has no other way to obtain the
+      # SBOM/provenance for the version they installed once the run artifact
+      # expires.
+      - name: Attach evidence to the GitHub Release
+        if: github.event_name == 'release'
+        working-directory: cpp-CAN
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            sbom.json provenance.json artifact-manifest.json \
+            safety-case.json safety-case.md tara.json tara.md \
+            fmea.json fmea.csv sas.json sas.md sci.json \
+            iso26262-gap-report.json iec61508-gap-report.json \
+            fusa-badge.svg \
+            --clobber
 
   static-analysis:
     name: Static analysis (clang-tidy)
@@ -451,7 +556,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: SoundMatt/cpp-FuSa
-          ref: v0.15.0
+          ref: v0.17.1
           path: cpp-FuSa
 
       - name: Install tools
@@ -465,9 +570,13 @@ jobs:
             -G Ninja
           cmake --build cpp-FuSa/build --parallel
 
-      - name: cpfusa init
+      - name: Generate .fusa-reqs.json from requirements/requirements.json
         working-directory: cpp-CAN
-        run: ../cpp-FuSa/build/cpfusa init --name cpp-CAN --standard iso26262 --asil ASIL-B --project-version 0.1.0 --force || true
+        run: python3 scripts/gen_fusa_reqs.py
+
+      - name: cpfusa init (no-op once .fusa.json/.fusa-reqs.json exist)
+        working-directory: cpp-CAN
+        run: ../cpp-FuSa/build/cpfusa init --name cpp-CAN --standard iso26262 --asil ASIL-B --project-version 0.1.0
 
       - name: Generate SARIF report
         working-directory: cpp-CAN
@@ -475,7 +584,7 @@ jobs:
           ../cpp-FuSa/build/cpfusa check \
             --format sarif \
             --output cpfusa.sarif \
-            --dir . || true
+            --dir .
 
       - name: Upload SARIF to GitHub Security tab
         if: hashFiles('cpp-CAN/cpfusa.sarif') != ''
