@@ -109,6 +109,43 @@ TEST_CASE("unwrap: sequence gap throws E2EError", "[safety][REQ-SAFETY-009]") {
     (void)p1;
 }
 
+TEST_CASE("unwrap: replaying two consecutive stale frames is rejected both times (no resync bypass)", "[safety][REQ-SEC-006]") {
+    // Regression test for a replay-resync bypass: unwrap() must never adopt a
+    // rejected (out-of-order/replayed) frame's seq as the new baseline. If it
+    // did, replaying seq=50 then seq=51 (two frames the receiver already
+    // consumed long ago) would incorrectly resync last_seq_ to 50 on the
+    // first rejection, making the second replayed frame (51 == 50 + 1) pass
+    // the gap check and be silently accepted as fresh.
+    Config cfg{0x0001, 0x0010};
+    Protector protector{cfg};
+    Receiver  receiver{cfg};
+
+    std::vector<std::vector<uint8_t>> frames;
+    for (int i = 0; i < 205; ++i) {
+        frames.push_back(protector.protect({static_cast<uint8_t>(i & 0xFF)}));
+    }
+
+    // Advance the receiver's baseline to seq=200 via legitimate in-order traffic.
+    for (int i = 0; i <= 200; ++i) {
+        REQUIRE_NOTHROW(receiver.unwrap(frames[static_cast<size_t>(i)]));
+    }
+
+    // Replay an old frame (seq=50). Must be rejected...
+    REQUIRE_THROWS_AS(receiver.unwrap(frames[50]), E2EError);
+    try { receiver.unwrap(frames[50]); }
+    catch (const E2EError& e) { CHECK(e.kind() == E2EErrorKind::SequenceGap); }
+
+    // ...and critically, the *next* replayed old frame (seq=51) must ALSO be
+    // rejected — not silently accepted because the receiver resynced to 50.
+    REQUIRE_THROWS_AS(receiver.unwrap(frames[51]), E2EError);
+    try { receiver.unwrap(frames[51]); }
+    catch (const E2EError& e) { CHECK(e.kind() == E2EErrorKind::SequenceGap); }
+
+    // The receiver must still be able to accept the real next frame (201)
+    // afterwards — the rejections above must not have corrupted its state.
+    REQUIRE_NOTHROW(receiver.unwrap(frames[201]));
+}
+
 TEST_CASE("multiple sequential unwraps succeed", "[safety][REQ-SAFETY-010]") {
     Config cfg{0x0001, 0x0010};
     Protector protector{cfg};

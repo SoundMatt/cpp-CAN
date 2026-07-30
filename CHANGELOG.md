@@ -2,6 +2,19 @@
 
 All notable changes to cpp-CAN are documented here.
 
+## [0.2.1] — 2026-07-29
+
+### Fixed
+- **Critical:** `safety::Receiver::unwrap()` committed a rejected out-of-order/replayed
+  frame's `seq` as the new baseline *before* throwing `E2EError`, instead of leaving
+  `last_seq_` untouched on the reject path. Two replayed frames back-to-back
+  (e.g. stale `seq=50` then `seq=51`) would resync the receiver's expected
+  sequence to the first replay and then silently accept the second as fresh,
+  defeating SG-02 / REQ-SEC-006's documented replay protection (closes #25).
+  Added a regression test that replays two consecutive stale frames and
+  asserts both are rejected, and that the receiver still accepts the genuine
+  next frame afterwards.
+
 ## [0.2.0] — 2026-07-27
 
 ### Added

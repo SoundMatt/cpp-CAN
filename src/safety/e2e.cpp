@@ -111,7 +111,12 @@ std::vector<uint8_t> Receiver::unwrap(const std::vector<uint8_t>& data) {
     std::lock_guard<std::mutex> lk(mu_);
     if (!first_ && seq != last_seq_ + 1) {
         uint32_t expected_seq = last_seq_ + 1;
-        last_seq_ = seq;
+        // Do NOT advance last_seq_ here: this frame was rejected (out-of-order
+        // or replayed), so it must not become the new baseline. Doing so would
+        // let an attacker resync the receiver with a replayed frame, after
+        // which the *next* replayed frame (old_seq + 1) would satisfy the
+        // gap check above and be silently accepted as fresh — defeating
+        // SG-02 / REQ-SEC-006's replay protection with two replayed frames.
         throw E2EError(E2EErrorKind::SequenceGap, seq,
                        "expected " + std::to_string(expected_seq) +
                        ", got " + std::to_string(seq));
