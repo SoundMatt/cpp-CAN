@@ -27,7 +27,7 @@ namespace relay {
 
 // The single source of truth for the targeted RELAY spec version (§19.4).
 // fusa:req REQ-RELAY-020
-inline constexpr std::string_view kRelaySpecVersion = "1.11";
+inline constexpr std::string_view kRelaySpecVersion = "2.0";
 
 // ── Protocol ─────────────────────────────────────────────────────────────────
 

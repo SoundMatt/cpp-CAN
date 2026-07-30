@@ -604,7 +604,7 @@
   {
     "id": "REQ-RELAY-020",
     "title": "kRelaySpecVersion constant",
-    "text": "The system shall export relay::kRelaySpecVersion equal to the RELAY spec version defined in spec/version.json (\"1.11\"), as the single source of truth for every reported spec_version.",
+    "text": "The system shall export relay::kRelaySpecVersion equal to the RELAY spec version defined in spec/version.json (\"2.0\"), as the single source of truth for every reported spec_version.",
     "category": "functional",
     "criticality": "low"
   },

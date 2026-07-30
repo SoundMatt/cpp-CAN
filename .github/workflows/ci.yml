@@ -130,6 +130,16 @@ jobs:
     name: RELAY conformance (relay conform)
     runs-on: ubuntu-22.04
     needs: build-and-test
+    env:
+      # RELAY reference-CLI version pin (§20.1.2 — an explicit, identical
+      # tag everywhere the relay CLI is installed; never a floating
+      # branch/@latest). Bump deliberately, re-verifying `relay conform`/
+      # `relay interop --strict` still pass, on a cadence tied to RELAY
+      # releases. RELAY's module path became github.com/SoundMatt/RELAY/v2
+      # as of v2.0.4 (Go semantic-import-versioning requirement for v2+
+      # modules) — the pre-v2.0.4 bare (non-/v2) path silently resolves
+      # forever to the last v1.x tag (v1.14.0) and can never reach v2.x.
+      RELAY_REF: v2.0.4
     steps:
       - uses: actions/checkout@v4
 
@@ -150,7 +160,7 @@ jobs:
           go-version: 'stable'
 
       - name: Install relay tool
-        run: go install github.com/SoundMatt/RELAY/cmd/relay@latest
+        run: go install github.com/SoundMatt/RELAY/v2/cmd/relay@${{ env.RELAY_REF }}
 
       - name: RELAY conformance gate
         run: relay conform --strict ./build/cli/cpp-can-cli
