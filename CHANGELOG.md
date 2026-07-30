@@ -2,6 +2,22 @@
 
 All notable changes to cpp-CAN are documented here.
 
+## [0.2.3] — 2026-07-30
+
+### Fixed
+- **Critical**: J1939 `decode_id`/`encode_id` placed the Data Page (DP) bit at PGN bit 17 (the Reserved/EDP slot) instead of bit 16, per the PGN's own R(17)·DP(16)·PF(15-8)·PS(7-0) structure (SAE J1939-21). Every DP=1 message produced a PGN off by `0x10000`. The `decode_id`/`encode_id` round-trip is self-consistent under the bug (both directions shift by the same wrong amount), which is why it went undetected; the dedicated DP-bit golden test (`REQ-J1939-003`) — which hand-constructs a raw 29-bit CAN ID from field positions rather than deriving it from `encode_id` — has been corrected to assert bit 16
+- J1939 BAM `TP.CM`/`TP.DT` frames were addressed to destination `0x00` instead of the required global address `0xFF`, because `encode_id` only ORs a PS/destination byte for PF ≥ 240 (PDU2); `send_tp` now explicitly ORs `kBroadcastAddr` into both the `TP.CM_BAM` and `TP.DT` PDU1 IDs
+- J1939 BAM reassembler (`subscribe_tp`) counted duplicate/retransmitted `TP.DT` segments toward completion via a bare counter, which could emit a frame with zero-filled gaps still present; now tracks per-sequence-number receipt in a `seen` bitmap and only counts a segment once
+- ISO-TP (ISO 15765-2) receiver advertised a non-zero BlockSize in its Flow Control but never emitted a follow-up FC at each block boundary, causing a conformant sender to stall after the first block; `Conn::recv` now counts consecutive CFs against `cfg_.block_size` and issues a fresh CTS FC when a block completes
+- `capabilities`: added the implemented `"send"` command (was omitted from `commands`); replaced the meaningless `"transports":["CAN"]` (the protocol name) with the actual compiled-in backends `["socketcan","virtual"]`; removed the falsely-advertised `"ICaller"` interface (CAN has no concrete `ICaller` — it is pure pub/sub)
+- `from_message` could throw an uncaught `std::invalid_argument` from `std::stoull` on malformed `can.sdt`/`can.vcid`/`can.af` meta values reachable from untrusted NDJSON input; now caught and converted to `ErrInvalidFrame`, which callers already handle
+- `socketcan::Bus::send` returned `payload_too_large` for structurally-valid but transport-unsupported CAN-XL frames, conflating "unsupported feature" with "oversize payload"; now returns `std::errc::not_supported`
+
+### Changed
+- README build instructions now note the Ninja requirement (CI and the Dockerfile force `-G Ninja`), matching CONTRIBUTING.md
+- CHANGELOG `[0.1.6]` Changed entry annotated to flag its `dbc`/`e2e` feature claim as corrected in `[0.1.8]`, resolving the self-contradiction between the two entries
+- SECURITY.md "Supported Versions" table now lists `0.2.x`/`0.1.x` explicitly instead of only `main`/`< v0.1`
+
 ## [0.2.2] — 2026-07-29
 
 ### Fixed
@@ -70,7 +86,7 @@ All notable changes to cpp-CAN are documented here.
 - 13 new tests: XL frame validation, `to_message`/`from_message` round-trips, `parse_frame_json` XL fields, `message_to_json` conditional XL meta
 
 ### Changed
-- `features` list normalised to spec-defined CAN values: `fd`, `isotp`, `j1939`, `dbc`, `e2e` (removed non-spec `convert`, `validate`)
+- `features` list normalised to spec-defined CAN values: `fd`, `isotp`, `j1939`, `dbc`, `e2e` (removed non-spec `convert`, `validate`) _(corrected in 0.1.8: `dbc` and `e2e` are not spec-defined feature values)_
 
 - Total: 119 requirements, 163 test cases
 

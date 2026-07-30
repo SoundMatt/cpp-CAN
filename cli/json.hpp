@@ -198,7 +198,7 @@ inline bool extract_string_map(const std::string& s, const std::string& key,
 // Single source of truth for the CLI's self-reported implementation version.
 // Bump on every release alongside CMakeLists.txt's project() VERSION and
 // CHANGELOG.md (see #18).
-inline constexpr std::string_view kToolVersion = "0.2.2";
+inline constexpr std::string_view kToolVersion = "0.2.3";
 
 // fusa:req REQ-CLI-004
 inline can::Frame parse_frame_json(const std::string& json) {
@@ -350,10 +350,10 @@ inline std::string capabilities_json() {
          "\"protocol_int\":1,"
          "\"version\":\"" << kToolVersion << "\","
          "\"spec_version\":\"" << relay::kRelaySpecVersion << "\","
-         "\"commands\":[\"version\",\"capabilities\",\"status\",\"convert\"],"
-         "\"transports\":[\"CAN\"],"
+         "\"commands\":[\"version\",\"capabilities\",\"status\",\"convert\",\"send\"],"
+         "\"transports\":[\"socketcan\",\"virtual\"],"
          "\"features\":[\"fd\",\"isotp\",\"j1939\"],"
-         "\"interfaces\":[\"IBus\",\"INode\",\"ICaller\"],"
+         "\"interfaces\":[\"IBus\",\"INode\"],"
          "\"optional_interfaces\":[\"ILoaningBus\",\"IHealthProvider\",\"IMetricsProvider\",\"IDrainer\"],"
          "\"adapt\":true"
          "}";

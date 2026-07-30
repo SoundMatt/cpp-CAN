@@ -88,7 +88,9 @@ std::error_code Bus::send(Frame frame) {
     }
     if (frame.xl) {
         // Not yet supported by this transport — see bus.hpp's module comment.
-        return relay::ErrPayloadTooLarge();
+        // A valid XL frame is neither oversize nor structurally invalid, so
+        // report it as an unsupported feature rather than payload_too_large.
+        return std::make_error_code(std::errc::not_supported);
     }
 
     {

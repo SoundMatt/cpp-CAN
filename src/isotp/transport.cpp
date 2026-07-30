@@ -153,6 +153,7 @@ Conn::recv(std::chrono::milliseconds timeout) {
         if (auto err = bus_->send(make_frame(fc_data)); err) return {{}, err};
 
         uint8_t sn = 1;
+        int cf_in_block = 0;
         while (static_cast<int>(buf.size()) < length) {
             auto [cf, cf_err] = recv_cf(timeout);
             if (cf_err) return {{}, cf_err};
@@ -162,6 +163,16 @@ Conn::recv(std::chrono::milliseconds timeout) {
             int chunk_len = std::min<int>(static_cast<int>(cf.data.size()) - 1, remaining);
             buf.insert(buf.end(), cf.data.begin() + 1, cf.data.begin() + 1 + chunk_len);
             ++sn;
+
+            // ISO 15765-2: with a non-zero BlockSize the sender pauses after BS
+            // consecutive frames; emit a fresh CTS Flow-Control at each block
+            // boundary so the transfer continues.
+            if (cfg_.block_size != 0 && static_cast<int>(buf.size()) < length) {
+                if (++cf_in_block == cfg_.block_size) {
+                    if (auto err = bus_->send(make_frame(fc_data)); err) return {{}, err};
+                    cf_in_block = 0;
+                }
+            }
         }
         return {buf, {}};
     }

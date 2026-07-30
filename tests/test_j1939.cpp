@@ -39,8 +39,8 @@ TEST_CASE("decode_id: Data Page bit is included in PGN", "[j1939][REQ-J1939-003]
     // DP=1, PF=0xFE, PS=0x00, Src=0x00 → PGN should have DP bit set
     uint32_t id = (6u << 26) | (1u << 24) | (0xFEu << 16) | (0x00u << 8) | 0x00u;
     auto [prio, pgn, src] = decode_id(id);
-    // DP bit is encoded as (dp << 17) in PGN, so DP=1 sets bit 17 (0x20000)
-    CHECK((static_cast<uint32_t>(pgn) & 0x20000u) != 0);  // DP bit present
+    // DP bit is encoded as (dp << 16) in PGN, so DP=1 sets bit 16 (0x10000)
+    CHECK((static_cast<uint32_t>(pgn) & 0x10000u) != 0);  // DP bit present
 }
 
 TEST_CASE("encode_id / decode_id round-trip", "[j1939][REQ-J1939-004]") {

@@ -103,11 +103,20 @@ Frame from_message(const relay::Message& m) {
     it = m.meta.find("can.xl");
     if (it != m.meta.end() && it->second == "true") f.xl = true;
     it = m.meta.find("can.sdt");
-    if (it != m.meta.end()) f.sdt = static_cast<uint8_t>(std::stoull(it->second));
+    if (it != m.meta.end()) {
+        try { f.sdt = static_cast<uint8_t>(std::stoull(it->second)); }
+        catch (...) { throw ErrInvalidFrame("invalid can.sdt: " + it->second); }
+    }
     it = m.meta.find("can.vcid");
-    if (it != m.meta.end()) f.vcid = static_cast<uint8_t>(std::stoull(it->second));
+    if (it != m.meta.end()) {
+        try { f.vcid = static_cast<uint8_t>(std::stoull(it->second)); }
+        catch (...) { throw ErrInvalidFrame("invalid can.vcid: " + it->second); }
+    }
     it = m.meta.find("can.af");
-    if (it != m.meta.end()) f.af = static_cast<uint32_t>(std::stoull(it->second));
+    if (it != m.meta.end()) {
+        try { f.af = static_cast<uint32_t>(std::stoull(it->second)); }
+        catch (...) { throw ErrInvalidFrame("invalid can.af: " + it->second); }
+    }
     it = m.meta.find("can.sec");
     if (it != m.meta.end() && it->second == "true") f.sec = true;
     return f;
