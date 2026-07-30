@@ -273,15 +273,25 @@ jobs:
       # cpp-FuSa is checked out; never a floating branch/@latest). Bump
       # deliberately, verifying the ASIL-B pipeline still passes, on a cadence
       # tied to cpp-FuSa releases.
-      CPP_FUSA_REF: v0.17.1
+      CPP_FUSA_REF: v0.18.0
       # Current, disclosed ISO 26262 / IEC 61508 Part 6 gap-report baseline
       # (see "Enforce gap-report baselines" below) — tracked in #36. Lower
       # these as real safety-lifecycle documentation (architectural design,
       # unit design/verification/test records, safety manual, configuration
       # management plan, ASIL decomposition, verification independence) is
       # added; CI fails if the gap count regresses above the baseline.
-      ISO26262_GAP_BASELINE: 12
-      IEC61508_GAP_BASELINE: 10
+      #
+      # Lowered 12->7 / 10->4 with the CPP_FUSA_REF v0.17.1->v0.18.0 bump:
+      # not new cpp-CAN evidence, but cpp-FuSa v0.18.0's gap-report
+      # evidence-detection fix (cpp-FuSa#57/#58/#59, v0.17.2) now correctly
+      # recognizes several already-existing evidence files (tara.json,
+      # fmea.json, safety-case.json, .fusa-hara.json, etc.) that the old
+      # cpfusa binary failed to detect and misreported as "gap". Re-verified
+      # locally: v0.17.1 reproduces the old 12/20, 10/18 baseline exactly
+      # against this same tree; v0.18.0 reports 7/20, 4/18 — a real
+      # detection fix, not a cpp-CAN change.
+      ISO26262_GAP_BASELINE: 7
+      IEC61508_GAP_BASELINE: 4
     steps:
       - name: Check out cpp-CAN
         uses: actions/checkout@v4
@@ -566,7 +576,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: SoundMatt/cpp-FuSa
-          ref: v0.17.1
+          ref: v0.18.0
           path: cpp-FuSa
 
       - name: Install tools

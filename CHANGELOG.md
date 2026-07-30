@@ -2,6 +2,13 @@
 
 All notable changes to cpp-CAN are documented here.
 
+## [0.2.5] — 2026-07-30
+
+### Changed
+- **CI**: `CPP_FUSA_REF` (cpp-FuSa version pin, §20.1.2) bumped `v0.17.1` → `v0.18.0` in both the `fusa-asil-b` job (via the env var) and the `sarif` job (previously a separate hardcoded `v0.17.1` literal, now also `v0.18.0` — kept in sync so both jobs run the same `cpfusa` build). Verified for real before pushing: built `cpfusa` v0.18.0 locally and ran the entire `fusa-asil-b` gating sequence (`check`, `lint`, `trace`, `cyber --write`, `qualify`, `hara init`, `boundary`, `tara`, `fmea`, `safety-case`, `sas`, `sci`, `iso26262`, `iec61508`, `badge`, `vuln`, `release`, `metrics record`, `report`) plus the `sarif` job's `check --format sarif` against cpp-CAN's own tree — all pass with 0 errors, matching the pre-bump baseline. Reviewed cpp-FuSa's v0.17.2/v0.18.0 CHANGELOG entries (independent third-party audit round, worst score in the x-FuSa ecosystem): the `hara asil`/`hara init` Table 4 fix, three live-exploitable command-injection fixes (`impact`/`analyze`/`verify`'s `popen()` shell-string `--dir`, `audit-pack`'s `zip` invocation, `release`'s SBOM/provenance `git`/`cmake` calls), and the lint `standard` attribution/gap-report `§3.1` header fixes are all cpfusa-tool-internal — none require a cpp-CAN source or config change.
+- **Lowered `ISO26262_GAP_BASELINE` 12→7 and `IEC61508_GAP_BASELINE` 10→4** in the `fusa-asil-b` job. Re-ran `cpfusa iso26262`/`iec61508` against the identical, unmodified cpp-CAN tree under both the old (`v0.17.1`) and new (`v0.18.0`) `cpfusa` binaries to isolate the cause: `v0.17.1` reproduces the previously-disclosed `12/20`/`10/18` baseline exactly; `v0.18.0` reports `7/20`/`4/18` against the same tree. This is cpp-FuSa v0.17.2's gap-report evidence-detection fix (cpp-FuSa#57–#59) correctly recognizing evidence this project already had (`tara.json`, `fmea.json`, `safety-case.json`, `.fusa-hara.json`, etc.) that the old binary failed to detect and misreported as "gap" — not new cpp-CAN safety-lifecycle documentation, and not a regression. Per the baseline-gate step's own convention (lower the baseline on a genuine improvement rather than leave slack in the regression gate), the baselines now reflect the re-verified, tool-corrected counts.
+- Bumped `cppcan` project version `0.2.4` → `0.2.5` (`CMakeLists.txt`, `cli/json.hpp`'s `kToolVersion`, `.fusa.json`) per this repo's convention of a patch bump for CI-tool-pin updates (precedent: the `v0.15.0`→`v0.17.1` `CPP_FUSA_REF` bump folded into `[0.2.2]` below).
+
 ## [0.2.4] — 2026-07-30
 
 ### Fixed
