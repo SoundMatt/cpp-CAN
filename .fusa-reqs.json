@@ -1,1 +1,2030 @@
-{"requirements":[]}
+{
+  "requirements": [
+    {
+      "id": "REQ-CAN-001",
+      "title": "CAN Frame ID and addressing fields",
+      "description": "The system shall define a Frame type with an arbitration ID (uint32) field and an extended-ID boolean flag.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/can.hpp:19",
+        "include/can/can.hpp:51"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-001B",
+      "title": "CAN Frame control flags",
+      "description": "The Frame type shall carry RTR, FD, and BRS boolean flags.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/can.hpp:51"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-001C",
+      "title": "CAN Frame data payload",
+      "description": "The Frame type shall carry a variable-length byte vector as the data payload.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/can.hpp:51"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-002",
+      "title": "Max data length query",
+      "description": "The system shall provide max_data_len(fd) returning 8 for standard CAN and 64 for CAN FD.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/can.hpp:20",
+        "include/can/can.hpp:102"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-003",
+      "title": "Frame filter structure",
+      "description": "The system shall define a Filter type with ID and Mask fields.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/can.hpp:21",
+        "include/can/can.hpp:74"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-004",
+      "title": "Filter match predicate",
+      "description": "The system shall implement Filter::matches(f) returning true when (f.id & mask) == (id & mask).",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/can.hpp:22",
+        "include/can/can.hpp:80"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-005",
+      "title": "Spec version constant",
+      "description": "The system shall export kSpecVersion = \"0.2\" matching the RELAY spec version.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/can.hpp:23"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-006",
+      "title": "IBus interface",
+      "description": "The system shall define an IBus abstract interface with send(), subscribe(), and close() methods.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/can.hpp:114"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-007",
+      "title": "RELAY bridge: to_message()",
+      "description": "The system shall provide to_message() to encode a CAN Frame and seq counter as a relay::Message.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/can.cpp:55",
+        "src/can.cpp:75",
+        "include/can/can.hpp:68",
+        "include/can/can.hpp:115",
+        "include/can/can.hpp:138"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6",
+        "tests/test_relay_adapter.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-015",
+      "title": "RELAY bridge: from_message()",
+      "description": "The system shall provide from_message() to decode a relay::Message back into a CAN Frame.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/can.cpp:55",
+        "src/can.cpp:75",
+        "src/can.cpp:78",
+        "include/can/can.hpp:68",
+        "include/can/can.hpp:138"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6",
+        "tests/test_relay_adapter.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-016",
+      "title": "RELAY bridge: adapt()",
+      "description": "The system shall provide adapt() to wrap an IBus as a relay::INode, forwarding send/subscribe/close and assigning monotonically increasing seq numbers.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/can.hpp:143"
+      ],
+      "tests": [
+        "tests/test_relay_adapter.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-008",
+      "title": "Error sentinel aliases",
+      "description": "The system shall alias relay error sentinels (ErrClosed, ErrNotConnected, ErrTimeout, ErrPayloadTooLarge) in the can namespace.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/can.hpp:43",
+        "include/can/can.hpp:116"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-009",
+      "title": "Validate standard ID",
+      "description": "validate_frame() shall throw ErrInvalidFrame when a non-extended frame ID exceeds 0x7FF.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/can.cpp:17",
+        "include/can/can.hpp:109"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-010",
+      "title": "Validate extended ID",
+      "description": "validate_frame() shall throw ErrInvalidFrame when an extended frame ID exceeds 0x1FFFFFFF.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/can.cpp:17",
+        "include/can/can.hpp:109"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-011",
+      "title": "Validate data length",
+      "description": "validate_frame() shall throw ErrInvalidFrame when standard CAN data exceeds 8 bytes or CAN FD data exceeds 64 bytes.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/can.cpp:17",
+        "include/can/can.hpp:109"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-012",
+      "title": "Validate RTR data",
+      "description": "validate_frame() shall throw ErrInvalidFrame when an RTR frame carries data.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/can.cpp:17",
+        "include/can/can.hpp:109"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-013",
+      "title": "Validate RTR+FD combination",
+      "description": "validate_frame() shall throw ErrInvalidFrame when both RTR and FD flags are set.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/can.cpp:17",
+        "include/can/can.hpp:109"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-014",
+      "title": "Validate BRS requires FD",
+      "description": "validate_frame() shall throw ErrInvalidFrame when BRS is set without FD.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/can.cpp:17",
+        "include/can/can.hpp:109"
+      ],
+      "tests": [
+        "tests/test_can.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CAN-017",
+      "title": "LoanedFrame type",
+      "description": "The system shall define a LoanedFrame value type holding a Frame and a release_fn that returns the buffer to a pool on destruction.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:103",
+        "include/can/optional.hpp:9"
+      ],
+      "tests": [
+        "tests/test_virtual.cpp:7"
+      ]
+    },
+    {
+      "id": "REQ-CAN-018",
+      "title": "ILoaningBus interface",
+      "description": "The system shall define ILoaningBus extending IBus with loan() returning a pre-allocated LoanedFrame, and send_loaned() transmitting and releasing that frame.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:103",
+        "include/can/optional.hpp:9"
+      ],
+      "tests": [
+        "tests/test_virtual.cpp:7"
+      ]
+    },
+    {
+      "id": "REQ-CAN-019",
+      "title": "Frame::to_message() member function",
+      "description": "The system shall expose Frame::to_message() as a member function performing the same lossless conversion to relay::Message as the free function can::to_message(), per RELAY spec \u00a718.2.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/can.hpp:68"
+      ]
+    },
+    {
+      "id": "REQ-VIRT-001",
+      "title": "Virtual bus creation",
+      "description": "virt::Bus::create() shall return a non-null shared_ptr to an in-process broadcast bus.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:27",
+        "include/can/virtual/bus.hpp:10",
+        "include/can/virtual/bus.hpp:28"
+      ],
+      "tests": [
+        "tests/test_virtual.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-VIRT-002",
+      "title": "Virtual bus broadcast send",
+      "description": "A frame sent on the virtual bus shall be delivered to all matching subscribers including the sender.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:27",
+        "include/can/virtual/bus.hpp:28"
+      ],
+      "tests": [
+        "tests/test_virtual.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-VIRT-003",
+      "title": "Virtual bus subscribe",
+      "description": "subscribe() shall return a channel that receives frames matching supplied filters; with empty filters all frames are delivered.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:77",
+        "include/can/virtual/bus.hpp:28"
+      ],
+      "tests": [
+        "tests/test_virtual.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-VIRT-004",
+      "title": "Virtual bus back-pressure",
+      "description": "The virtual bus shall support DropNewest, DropOldest, and Block back-pressure policies per subscriber.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:77",
+        "include/can/virtual/bus.hpp:28"
+      ],
+      "tests": [
+        "tests/test_virtual.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-VIRT-005",
+      "title": "Virtual bus close is idempotent",
+      "description": "close() shall be idempotent: calling it multiple times shall not panic, deadlock, or return an error.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:27",
+        "include/can/virtual/bus.hpp:28"
+      ],
+      "tests": [
+        "tests/test_virtual.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-VIRT-006",
+      "title": "Virtual bus closed-state rejection",
+      "description": "send() and subscribe() called on a closed bus shall return ErrClosed.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:27",
+        "src/virtual/bus.cpp:77",
+        "include/can/virtual/bus.hpp:29"
+      ],
+      "tests": [
+        "tests/test_virtual.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-VIRT-007",
+      "title": "Virtual bus subscriber channel teardown",
+      "description": "All subscriber channels shall be closed when the bus is closed, unblocking any blocked recv() callers.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:77",
+        "include/can/virtual/bus.hpp:29"
+      ],
+      "tests": [
+        "tests/test_virtual.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-VIRT-008",
+      "title": "Virtual bus zero-copy loan",
+      "description": "virt::Bus shall implement ILoaningBus: loan() shall return a pre-allocated LoanedFrame and send_loaned() shall transmit and release it.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:103",
+        "include/can/virtual/bus.hpp:29"
+      ],
+      "tests": [
+        "tests/test_virtual.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-VIRT-009",
+      "title": "Virtual bus optional capabilities",
+      "description": "virt::Bus shall implement IHealthProvider (reporting OK when open, Down when closed), IMetricsProvider (tracking write_count, deliver_count, drop_count, bytes_written, bytes_delivered, error_count), and IDrainer (close_with_drain).",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:119",
+        "src/virtual/bus.cpp:126",
+        "include/can/virtual/bus.hpp:10",
+        "include/can/virtual/bus.hpp:29"
+      ],
+      "tests": [
+        "tests/test_virtual.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-001",
+      "title": "ISO-TP configuration",
+      "description": "Conn::create() shall accept a Config with TxID, RxID, ExtIDs, BlockSize, STmin, and timeout.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/isotp/transport.hpp:16",
+        "include/can/isotp/transport.hpp:29",
+        "include/can/isotp/transport.hpp:46"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-002",
+      "title": "ISO-TP RxID subscription",
+      "description": "Conn::create() shall subscribe for the configured RxID on the provided bus.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/isotp/transport.hpp:30"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-003",
+      "title": "ISO-TP ExtIDs flag",
+      "description": "The ISO-TP Conn shall use 29-bit extended IDs when cfg.ext_ids is true.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/isotp/transport.hpp:31"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-004",
+      "title": "ISO-TP Conn type",
+      "description": "Conn shall be an opaque connection type obtained from Conn::create().",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/isotp/transport.hpp:42",
+        "include/can/isotp/transport.hpp:46"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-005",
+      "title": "ISO-TP single-frame send",
+      "description": "send() shall transmit payloads of 1\u20137 bytes as a Single Frame (SF).",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/isotp/transport.cpp:53",
+        "include/can/isotp/transport.hpp:51"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-006",
+      "title": "ISO-TP first frame send",
+      "description": "send() shall transmit the first 6 bytes of multi-frame payloads as a First Frame (FF).",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/isotp/transport.cpp:53"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-007",
+      "title": "ISO-TP consecutive frame send",
+      "description": "send() shall transmit remaining bytes as Consecutive Frames (CF) after receiving Flow Control.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/isotp/transport.cpp:53"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-008",
+      "title": "ISO-TP payload limit",
+      "description": "send() shall return ErrPayloadTooLarge for payloads exceeding 4095 bytes.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/isotp/transport.cpp:53",
+        "include/can/isotp/transport.hpp:51"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-009",
+      "title": "ISO-TP single-frame receive",
+      "description": "recv() shall reassemble a Single Frame and return the payload.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/isotp/transport.cpp:126",
+        "include/can/isotp/transport.hpp:55"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-010",
+      "title": "ISO-TP first-frame receive",
+      "description": "recv() shall detect a First Frame and send a Flow Control response.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/isotp/transport.cpp:126"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-011",
+      "title": "ISO-TP consecutive-frame receive",
+      "description": "recv() shall assemble all Consecutive Frames into the complete payload.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/isotp/transport.cpp:126"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-012",
+      "title": "ISO-TP sequence number check",
+      "description": "recv() shall verify Consecutive Frame sequence numbers and return an error on mismatch.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/isotp/transport.cpp:126"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-ISOTP-013",
+      "title": "ISO-TP bus-closed handling",
+      "description": "recv() shall return an error when the underlying bus channel closes.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/isotp/transport.cpp:126",
+        "include/can/isotp/transport.hpp:16",
+        "include/can/isotp/transport.hpp:55"
+      ],
+      "tests": [
+        "tests/test_isotp.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-J1939-001",
+      "title": "J1939 ID decoding",
+      "description": "decode_id() shall extract Priority, PGN, and Source Address from a 29-bit J1939 CAN ID.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/j1939/pgn.cpp:13",
+        "include/can/j1939/pgn.hpp:17",
+        "include/can/j1939/pgn.hpp:31",
+        "include/can/j1939/pgn.hpp:51"
+      ],
+      "tests": [
+        "tests/test_j1939.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-J1939-002",
+      "title": "J1939 PDU format distinction",
+      "description": "decode_id() shall treat PF < 240 as peer-to-peer (PS is destination) and PF >= 240 as broadcast (PS is part of PGN).",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/j1939/pgn.cpp:13",
+        "include/can/j1939/pgn.hpp:34",
+        "include/can/j1939/pgn.hpp:52"
+      ],
+      "tests": [
+        "tests/test_j1939.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-J1939-003",
+      "title": "J1939 Data Page bit",
+      "description": "decode_id() shall include the Data Page bit in the PGN.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/j1939/pgn.cpp:13",
+        "include/can/j1939/pgn.hpp:53"
+      ],
+      "tests": [
+        "tests/test_j1939.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-J1939-004",
+      "title": "J1939 ID encoding",
+      "description": "encode_id() shall build a 29-bit J1939 CAN ID from Priority, PGN, and Source Address.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/j1939/pgn.cpp:30",
+        "include/can/j1939/pgn.hpp:58"
+      ],
+      "tests": [
+        "tests/test_j1939.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-J1939-005",
+      "title": "J1939 Bus send",
+      "description": "Bus::send() shall encode and transmit J1939 frames, using BAM TP for payloads > 8 bytes.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/j1939/pgn.cpp:52",
+        "include/can/j1939/pgn.hpp:62",
+        "include/can/j1939/pgn.hpp:70"
+      ],
+      "tests": [
+        "tests/test_j1939.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-J1939-006",
+      "title": "J1939 Bus subscribe",
+      "description": "Bus::subscribe() shall deliver decoded J1939 frames filtered by PGN; with no PGNs all frames are delivered.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/j1939/pgn.cpp:70",
+        "include/can/j1939/pgn.hpp:17",
+        "include/can/j1939/pgn.hpp:63",
+        "include/can/j1939/pgn.hpp:75"
+      ],
+      "tests": [
+        "tests/test_j1939.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SAFETY-001",
+      "title": "E2E Config",
+      "description": "The E2E Config shall include DataID and SourceID fields.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/safety/e2e.hpp:18",
+        "include/can/safety/e2e.hpp:33"
+      ],
+      "tests": [
+        "tests/test_safety.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SAFETY-002",
+      "title": "E2E header size",
+      "description": "The E2E header shall be exactly 10 bytes.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/safety/e2e.hpp:34"
+      ],
+      "tests": [
+        "tests/test_safety.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SAFETY-003",
+      "title": "E2E error kinds",
+      "description": "The system shall define E2EErrorKind values for CRCMismatch, SequenceGap, and HeaderTooShort.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/safety/e2e.hpp:40",
+        "include/can/safety/e2e.hpp:60"
+      ],
+      "tests": [
+        "tests/test_safety.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SAFETY-004",
+      "title": "Protector construction",
+      "description": "Protector shall be constructible from Config and maintain a monotonically increasing sequence counter.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/safety/e2e.hpp:61"
+      ],
+      "tests": [
+        "tests/test_safety.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SAFETY-005",
+      "title": "Protector protect()",
+      "description": "protect() shall prepend the 10-byte E2E header to the payload and return the combined buffer.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/safety/e2e.cpp:72",
+        "include/can/safety/e2e.hpp:62"
+      ],
+      "tests": [
+        "tests/test_safety.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SAFETY-006",
+      "title": "Sequence counter increment",
+      "description": "Each call to protect() shall increment the sequence counter by 1.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/safety/e2e.cpp:73",
+        "include/can/safety/e2e.hpp:63"
+      ],
+      "tests": [
+        "tests/test_safety.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SAFETY-007",
+      "title": "Receiver header length check",
+      "description": "unwrap() shall throw E2EError(HeaderTooShort) when data is shorter than 10 bytes.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/safety/e2e.cpp:87",
+        "include/can/safety/e2e.hpp:77"
+      ],
+      "tests": [
+        "tests/test_safety.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SAFETY-008",
+      "title": "Receiver CRC check",
+      "description": "unwrap() shall throw E2EError(CRCMismatch) when the CRC does not match.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/safety/e2e.cpp:87",
+        "include/can/safety/e2e.hpp:77"
+      ],
+      "tests": [
+        "tests/test_safety.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SAFETY-009",
+      "title": "Receiver sequence gap check",
+      "description": "unwrap() shall throw E2EError(SequenceGap) when the sequence number is not exactly lastSeq+1.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/safety/e2e.cpp:87",
+        "include/can/safety/e2e.hpp:77"
+      ],
+      "tests": [
+        "tests/test_safety.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SAFETY-010",
+      "title": "Receiver sequential success",
+      "description": "unwrap() shall succeed for a sequence of consecutive frames with correct CRC.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/safety/e2e.cpp:87",
+        "include/can/safety/e2e.hpp:77"
+      ],
+      "tests": [
+        "tests/test_safety.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SAFETY-011",
+      "title": "Receiver thread safety",
+      "description": "Receiver::unwrap() shall be thread-safe (mutex-protected sequence counter).",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/safety/e2e.cpp:87",
+        "include/can/safety/e2e.hpp:18",
+        "include/can/safety/e2e.hpp:77"
+      ],
+      "tests": [
+        "tests/test_safety.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-DBC-001",
+      "title": "DBC parse messages",
+      "description": "parse() shall read BO_ lines and populate DB.messages with Message entries.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/dbc/parser.cpp:13",
+        "include/can/dbc/parser.hpp:9",
+        "include/can/dbc/parser.hpp:64",
+        "include/can/dbc/parser.hpp:80"
+      ],
+      "tests": [
+        "tests/test_dbc.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-DBC-002",
+      "title": "DBC byte order",
+      "description": "The parser shall support both LittleEndian (Intel @1) and BigEndian (Motorola @0) signal byte orders.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/dbc/parser.cpp:13",
+        "include/can/dbc/parser.hpp:24",
+        "include/can/dbc/parser.hpp:80"
+      ],
+      "tests": [
+        "tests/test_dbc.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-DBC-003",
+      "title": "DBC parse signals",
+      "description": "parse() shall read SG_ lines and populate Message.signals with Signal entries.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/dbc/parser.cpp:13",
+        "include/can/dbc/parser.hpp:30",
+        "include/can/dbc/parser.hpp:80"
+      ],
+      "tests": [
+        "tests/test_dbc.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-DBC-004",
+      "title": "DBC message fields",
+      "description": "Each parsed Message shall include: ID, name, DLC, sender, and signals map.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/dbc/parser.cpp:13",
+        "include/can/dbc/parser.hpp:54",
+        "include/can/dbc/parser.hpp:80"
+      ],
+      "tests": [
+        "tests/test_dbc.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-DBC-005",
+      "title": "Signal physical decode",
+      "description": "Signal::decode() shall extract raw bits and apply factor/offset to return the physical value.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/dbc/parser.cpp:13",
+        "include/can/dbc/parser.hpp:46"
+      ],
+      "tests": [
+        "tests/test_dbc.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-DBC-006",
+      "title": "VAL_ value table",
+      "description": "parse() shall read VAL_ lines and populate Signal.values with raw\u2192label mappings.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/dbc/parser.cpp:13",
+        "include/can/dbc/parser.hpp:50"
+      ],
+      "tests": [
+        "tests/test_dbc.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-DBC-007",
+      "title": "DB decode",
+      "description": "DB::decode() shall return all signal physical values for a given message ID and data.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/dbc/parser.cpp:13",
+        "include/can/dbc/parser.hpp:9",
+        "include/can/dbc/parser.hpp:69"
+      ],
+      "tests": [
+        "tests/test_dbc.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-001",
+      "title": "Protocol type",
+      "description": "The system shall define a Protocol integer enum with zero reserved.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:12",
+        "include/can/relay.hpp:34"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-002",
+      "title": "Protocol constants",
+      "description": "The system shall define Protocol constants CAN=1, DDS=2, LIN=3, MQTT=4, RCP=5, SOMEIP=6.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:12",
+        "include/can/relay.hpp:34"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-003",
+      "title": "Protocol to_string",
+      "description": "to_string(Protocol) shall return the canonical upper-case name.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:12",
+        "include/can/relay.hpp:44"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-004",
+      "title": "Version type",
+      "description": "The system shall define a Version triple with major, minor, patch fields.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:12",
+        "include/can/relay.hpp:53"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-005",
+      "title": "Version to_string",
+      "description": "Version::to_string() shall return \"MAJOR.MINOR.PATCH\".",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:12",
+        "include/can/relay.hpp:53"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-006",
+      "title": "Message type",
+      "description": "The system shall define a Message envelope with protocol, version, id, payload, timestamp, seq, and meta fields.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:13",
+        "include/can/relay.hpp:67"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:7"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-007",
+      "title": "Message seq and meta optional",
+      "description": "seq and meta shall default to zero/empty and be omitted from serialization when not set.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:13",
+        "include/can/relay.hpp:67"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:7"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-008",
+      "title": "ErrClosed sentinel",
+      "description": "The system shall define ErrClosed() returning a distinct error_code for the closed state.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:13",
+        "include/can/relay.hpp:80"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:7"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-009",
+      "title": "ErrNotConnected sentinel",
+      "description": "The system shall define ErrNotConnected() for the not-connected state.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:13",
+        "include/can/relay.hpp:80"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:7"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-010",
+      "title": "ErrTimeout sentinel",
+      "description": "The system shall define ErrTimeout() for the timeout state.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:13",
+        "include/can/relay.hpp:80"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:7"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-011",
+      "title": "ErrPayloadTooLarge sentinel",
+      "description": "The system shall define ErrPayloadTooLarge() for the oversized payload state.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:14",
+        "include/can/relay.hpp:80"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-012",
+      "title": "Error sentinel distinctness",
+      "description": "All four error sentinels shall be distinct (no two shall compare equal).",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:14",
+        "include/can/relay.hpp:80"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-013",
+      "title": "INode interface",
+      "description": "The system shall define INode with protocol(), send(), subscribe(), and close() methods.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:14",
+        "include/can/relay.hpp:199"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-014",
+      "title": "ICaller interface",
+      "description": "The system shall define ICaller extending INode with a synchronous call() method.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:14",
+        "include/can/relay.hpp:220"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-015",
+      "title": "BackPressurePolicy enum",
+      "description": "The system shall define BackPressurePolicy with DropNewest=0, DropOldest=1, Block=2.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:14",
+        "include/can/relay.hpp:100"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-016",
+      "title": "SubscriberConfig type",
+      "description": "The system shall define SubscriberConfig with chan_depth, back_pressure, event_id, and topic_name.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:15",
+        "include/can/relay.hpp:109"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:9"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-017",
+      "title": "SubscriberOption factories",
+      "description": "The system shall provide with_channel_depth(), with_back_pressure(), with_event_id(), and with_topic() option factories.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:15",
+        "include/can/relay.hpp:122"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:9"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-018",
+      "title": "apply_options()",
+      "description": "apply_options() shall apply each option in order to a zero-initialized SubscriberConfig and return it.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:15",
+        "include/can/relay.hpp:140"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:9"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-019",
+      "title": "effective_depth()",
+      "description": "SubscriberConfig::effective_depth(d) shall return chan_depth if > 0, otherwise d.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:15",
+        "include/can/relay.hpp:116"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:9"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-020",
+      "title": "kRelaySpecVersion constant",
+      "description": "The system shall export relay::kRelaySpecVersion equal to the RELAY spec version defined in spec/version.json (\"1.11\"), as the single source of truth for every reported spec_version.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:15",
+        "include/can/relay.hpp:29"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:9"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-021",
+      "title": "Error category registration",
+      "description": "The system shall provide error_category() returning a singleton std::error_category with a unique name, and make_error_code(Errc) mapping each Errc enumerator to a distinct std::error_code in that category.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:16",
+        "include/can/relay.hpp:88"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:10"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-022",
+      "title": "Errc is_error_code_enum specialization",
+      "description": "relay::Errc shall specialize std::is_error_code_enum so that relay::Errc values implicitly convert to std::error_code without an explicit make_error_code() call.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:16",
+        "include/can/relay.hpp:270"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:10"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-023",
+      "title": "HealthStatus enum",
+      "description": "The system shall define HealthStatus with OK=0, Degraded=1, Down=2.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:16",
+        "src/virtual/bus.cpp:119",
+        "include/can/relay.hpp:230"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:10",
+        "tests/test_virtual.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-024",
+      "title": "Health struct",
+      "description": "The system shall define a Health struct with status and details fields.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:16",
+        "src/virtual/bus.cpp:119",
+        "include/can/relay.hpp:230"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:10",
+        "tests/test_virtual.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-025",
+      "title": "IHealthProvider interface",
+      "description": "The system shall define IHealthProvider with a health() method.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:16",
+        "src/virtual/bus.cpp:119",
+        "include/can/relay.hpp:230"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:10",
+        "tests/test_virtual.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-026",
+      "title": "Metrics counters: write and deliver",
+      "description": "The system shall define a Metrics struct with write_count and deliver_count fields tracking frame transmission and successful delivery.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:17",
+        "src/virtual/bus.cpp:126",
+        "include/can/relay.hpp:244"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:11",
+        "tests/test_virtual.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-029",
+      "title": "Metrics counters: drop, bytes, and errors",
+      "description": "The Metrics struct shall include drop_count, bytes_written, bytes_delivered, and error_count fields.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:17",
+        "src/virtual/bus.cpp:126",
+        "include/can/relay.hpp:244"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:11",
+        "tests/test_virtual.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-027",
+      "title": "IMetricsProvider interface",
+      "description": "The system shall define IMetricsProvider with a metrics() method.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:17",
+        "src/virtual/bus.cpp:126",
+        "include/can/relay.hpp:254"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:11",
+        "tests/test_virtual.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-028",
+      "title": "IDrainer interface",
+      "description": "The system shall define IDrainer with close_with_drain(timeout) that waits for all deliveries before closing.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:17",
+        "include/can/relay.hpp:261"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:11",
+        "tests/test_virtual.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-051",
+      "title": "with_event_id option",
+      "description": "with_event_id(id) shall set event_id in SubscriberConfig.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:18",
+        "include/can/relay.hpp:126"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:12"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-056",
+      "title": "with_topic option",
+      "description": "with_topic(name) shall set topic_name in SubscriberConfig.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:18",
+        "include/can/relay.hpp:126"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:12"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-059",
+      "title": "parse_protocol()",
+      "description": "parse_protocol() shall map a protocol name (case-insensitive) to its Protocol constant and throw on unknown names.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/relay.cpp:18",
+        "include/can/relay.hpp:47"
+      ],
+      "tests": [
+        "tests/test_relay.cpp:12"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-060",
+      "title": "relay::Context",
+      "description": "The system shall define relay::Context per RELAY spec \u00a718.2 with background(), with_deadline(), with_timeout() factories and done()/deadline() accessors.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/relay.hpp:149"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-061",
+      "title": "relay::Channel<T>",
+      "description": "The system shall define relay::Channel<T> per RELAY spec \u00a718.2 exposing push()/recv()/try_recv()/close()/is_closed(), aliasing can::Chan<T> as its implementation.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/channel.hpp:47",
+        "include/can/relay.hpp:181"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-062",
+      "title": "relay::SubscriberOptions",
+      "description": "The system shall define the plain-struct relay::SubscriberOptions (channel_depth, back_pressure) per RELAY spec \u00a718.2, distinct from the Go-mirrored SubscriberConfig/SubscriberOption helpers (\u00a714.1).",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/relay.hpp:191"
+      ]
+    },
+    {
+      "id": "REQ-RELAY-063",
+      "title": "INode/ICaller \u00a718.2 signatures",
+      "description": "INode::send, INode::subscribe, INode::close, and ICaller::call shall use the RELAY spec \u00a718.2 C++ signatures: send(Context, const Message&), subscribe(SubscriberOptions), close() noexcept, call(Context, const Message&).",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/relay.hpp:199",
+        "include/can/relay.hpp:220"
+      ]
+    },
+    {
+      "id": "REQ-SEC-001",
+      "title": "Frame ID bounds validation",
+      "description": "The system shall reject any CAN frame whose arbitration ID exceeds the maximum for its addressing mode (0x7FF for standard, 0x1FFFFFFF for extended) before the frame is admitted to any bus or processing path.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/can.cpp:18"
+      ],
+      "tests": [
+        "tests/test_security.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SEC-002",
+      "title": "Payload length validation",
+      "description": "The system shall reject any CAN frame whose data length exceeds the maximum for its frame type (8 bytes for standard CAN, 64 bytes for CAN FD) before the frame is transmitted or delivered.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/can.cpp:18"
+      ],
+      "tests": [
+        "tests/test_security.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SEC-003",
+      "title": "RTR+FD mutual exclusion",
+      "description": "The system shall reject any frame with both RTR and FD flags set, as this combination is undefined and could be used to confuse frame parsers.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/can.cpp:18"
+      ],
+      "tests": [
+        "tests/test_security.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SEC-004",
+      "title": "E2E payload integrity",
+      "description": "The E2E Protector shall prepend a CRC-16/CCITT-FALSE integrity header so that any single-bit or burst corruption of the protected payload is detectable by the receiver.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/safety/e2e.cpp:74"
+      ],
+      "tests": [
+        "tests/test_security.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SEC-005",
+      "title": "E2E CRC rejection",
+      "description": "The E2E Receiver shall reject any frame whose computed CRC does not match the header CRC, returning E2EError(CRCMismatch), and shall not deliver the payload to the application.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/safety/e2e.cpp:88"
+      ],
+      "tests": [
+        "tests/test_security.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-SEC-006",
+      "title": "E2E replay / reorder detection",
+      "description": "The E2E Receiver shall detect replayed or reordered frames by verifying that each incoming sequence counter is exactly lastSeq+1, returning E2EError(SequenceGap) on violation.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/safety/e2e.cpp:88"
+      ],
+      "tests": [
+        "tests/test_security.cpp:7"
+      ]
+    },
+    {
+      "id": "REQ-SEC-007",
+      "title": "Subscription allowlist filtering",
+      "description": "IBus::subscribe() shall accept a non-empty filter list; when provided, only frames whose ID satisfies at least one filter's (id & mask) == (filter.id & mask) predicate shall be delivered to that subscriber.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:78"
+      ],
+      "tests": [
+        "tests/test_security.cpp:7"
+      ]
+    },
+    {
+      "id": "REQ-SEC-008",
+      "title": "Bus flooding \u2014 channel depth cap",
+      "description": "Each subscriber channel shall have a bounded capacity; the bus shall never allocate unbounded memory in response to a high frame rate, regardless of how many frames are produced.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:28"
+      ],
+      "tests": [
+        "tests/test_security.cpp:7"
+      ]
+    },
+    {
+      "id": "REQ-SEC-009",
+      "title": "Bus flooding \u2014 subscriber isolation",
+      "description": "A slow or full subscriber using DropNewest or DropOldest back-pressure shall not delay or block frame delivery to other subscribers.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:28"
+      ],
+      "tests": [
+        "tests/test_security.cpp:7"
+      ]
+    },
+    {
+      "id": "REQ-SEC-010",
+      "title": "ISO-TP oversized payload rejection",
+      "description": "The ISO-TP transport shall reject any send() request for a payload exceeding 4095 bytes, returning ErrPayloadTooLarge, preventing integer-overflow in frame-count calculations.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/isotp/transport.cpp:54"
+      ],
+      "tests": [
+        "tests/test_security.cpp:7"
+      ]
+    },
+    {
+      "id": "REQ-SEC-011",
+      "title": "ISO-TP sequence integrity",
+      "description": "The ISO-TP receiver shall verify the consecutive-frame sequence number on each CF and return an error on mismatch, preventing partial-payload delivery from interleaved or injected frames.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/isotp/transport.cpp:127"
+      ],
+      "tests": [
+        "tests/test_security.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-SEC-012",
+      "title": "Closed-bus send rejection",
+      "description": "Any attempt to send a frame on a closed bus shall return ErrClosed and shall not access subscriber state, preventing use-after-free on shutdown.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/virtual/bus.cpp:28"
+      ],
+      "tests": [
+        "tests/test_security.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-SEC-013",
+      "title": "Non-blocking channel try_send",
+      "description": "Chan<T>::try_send() shall return immediately with SendResult::Full when the channel is at capacity, without blocking or allocating memory, preventing a producer from being held by a slow consumer.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "include/can/channel.hpp:50"
+      ],
+      "tests": [
+        "tests/test_security.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-SEC-014",
+      "title": "E2E header minimum length check",
+      "description": "The E2E Receiver shall reject any buffer shorter than the 10-byte header with E2EError(HeaderTooShort), preventing out-of-bounds reads on truncated or injected frames.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/safety/e2e.cpp:88"
+      ],
+      "tests": [
+        "tests/test_security.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-SEC-015",
+      "title": "DBC unknown message safety",
+      "description": "DB::decode() shall return an empty map for an unrecognised message ID rather than asserting or accessing uninitialised state, preventing information disclosure from unknown frame IDs.",
+      "standard_ref": "iso26262",
+      "severity": "cybersecurity",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/dbc/parser.cpp:14"
+      ],
+      "tests": [
+        "tests/test_security.cpp:8"
+      ]
+    },
+    {
+      "id": "REQ-CLI-001",
+      "title": "CLI version subcommand",
+      "description": "The cpp-can-cli binary shall output spec version, implementation name, and version as JSON to stdout when invoked with the 'version' subcommand.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "cli/json.hpp:316"
+      ],
+      "tests": [
+        "tests/test_cli.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CLI-002",
+      "title": "CLI capabilities subcommand",
+      "description": "The cpp-can-cli binary shall output supported protocols and commands as JSON to stdout when invoked with the 'capabilities' subcommand.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "cli/json.hpp:343"
+      ],
+      "tests": [
+        "tests/test_cli.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CLI-003",
+      "title": "CLI status subcommand",
+      "description": "The cpp-can-cli binary shall output health status as JSON to stdout when invoked with the 'status' subcommand.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "cli/json.hpp:363"
+      ],
+      "tests": [
+        "tests/test_cli.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CLI-004",
+      "title": "CLI convert reads can.Frame JSON",
+      "description": "The convert subcommand with --protocol CAN shall read a can.Frame JSON object from stdin and parse it into a Frame struct.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "cli/json.hpp:203"
+      ],
+      "tests": [
+        "tests/test_cli.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CLI-005",
+      "title": "CLI convert writes relay.Message JSON",
+      "description": "The convert subcommand shall call to_message() and write the resulting relay.Message as JSON to stdout, with zeroed timestamp and sorted meta keys.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "cli/json.hpp:223"
+      ],
+      "tests": [
+        "tests/test_cli.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CLI-006",
+      "title": "CLI convert exit codes",
+      "description": "The convert subcommand shall exit 0 on success, 1 on invalid input (bad JSON or frame validation failure), and 2 on invalid arguments (missing --protocol, unsupported format, unknown command).",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "cli/main.cpp:103"
+      ],
+      "tests": [
+        "tests/test_cli.cpp:6"
+      ]
+    },
+    {
+      "id": "REQ-CLI-007",
+      "title": "version/status --format validation",
+      "description": "The version and status subcommands shall accept --format text|json (defaulting to json), render a distinct text form when --format text is given, and exit 2 with an error message for any other --format value, per RELAY spec \u00a711.1.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "cli/json.hpp:331",
+        "cli/json.hpp:378",
+        "cli/json.hpp:385",
+        "cli/main.cpp:24",
+        "cli/main.cpp:36",
+        "cli/main.cpp:49"
+      ]
+    },
+    {
+      "id": "REQ-CLI-008",
+      "title": "send --format json streaming sink",
+      "description": "The send subcommand, invoked as send --format json with no protocol flags, shall read a stream of relay.Message values as NDJSON on stdin and publish each until EOF, per RELAY spec \u00a711.2; a line that fails to parse or convert shall cause an exit code of 1 with the sentinel error name on stderr.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "cli/json.hpp:252",
+        "cli/json.hpp:273",
+        "cli/main.cpp:69"
+      ]
+    },
+    {
+      "id": "REQ-SCAN-001",
+      "title": "SocketCAN bus creation",
+      "description": "socketcan::Bus::create(iface) shall open a CAN_RAW socket and bind it to the named Linux network interface (hardware or vcan), returning ErrNotConnected if the socket, interface lookup, or bind fails.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/socketcan/bus.cpp:37",
+        "include/can/socketcan/bus.hpp:22",
+        "include/can/socketcan/bus.hpp:53",
+        "include/can/socketcan/bus.hpp:61"
+      ],
+      "tests": [
+        "interop/can_interop_peer.cpp:31",
+        "interop/test_two_process_interop.cpp:25",
+        "interop/test_two_process_interop.cpp:102",
+        "interop/test_two_process_interop.cpp:213"
+      ]
+    },
+    {
+      "id": "REQ-SCAN-002",
+      "title": "SocketCAN FD frame support enabled by default",
+      "description": "socketcan::Bus::create() shall enable CAN FD frame send/receive (CAN_RAW_FD_FRAMES) on the socket, best-effort, without failing bus creation on classic-only interfaces that reject the option.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/socketcan/bus.cpp:37",
+        "include/can/socketcan/bus.hpp:23",
+        "include/can/socketcan/bus.hpp:61"
+      ],
+      "tests": [
+        "interop/test_two_process_interop.cpp:167"
+      ]
+    },
+    {
+      "id": "REQ-SCAN-003",
+      "title": "SocketCAN send encodes and transmits real kernel frames",
+      "description": "send() shall encode a validated Frame as a kernel can_frame (classic) or canfd_frame (fd=true) and transmit it via write() on the bound socket, so it is observable by any other process/tool listening on the same interface.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/socketcan/bus.cpp:82",
+        "include/can/socketcan/bus.hpp:24",
+        "include/can/socketcan/bus.hpp:71"
+      ],
+      "tests": [
+        "interop/can_interop_peer.cpp:31",
+        "interop/test_cangen_candump_interop.cpp:29",
+        "interop/test_cangen_candump_interop.cpp:120",
+        "interop/test_two_process_interop.cpp:25",
+        "interop/test_two_process_interop.cpp:102",
+        "interop/test_two_process_interop.cpp:167"
+      ]
+    },
+    {
+      "id": "REQ-SCAN-004",
+      "title": "SocketCAN send validates before transmitting",
+      "description": "send() shall call validate_frame() before writing to the socket and return ErrPayloadTooLarge without a syscall when validation fails; CAN XL frames (xl=true) shall always be rejected (not yet supported by this transport).",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/socketcan/bus.cpp:82",
+        "include/can/socketcan/bus.hpp:25",
+        "include/can/socketcan/bus.hpp:71"
+      ]
+    },
+    {
+      "id": "REQ-SCAN-005",
+      "title": "SocketCAN subscribe delivers real received frames",
+      "description": "subscribe() shall return a Chan<Frame> that receives frames actually read off the bound socket by the background reader thread, filtered per the same Filter/back-pressure semantics as can::virt::Bus.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/socketcan/bus.cpp:129",
+        "src/socketcan/bus.cpp:164",
+        "include/can/socketcan/bus.hpp:26",
+        "include/can/socketcan/bus.hpp:53",
+        "include/can/socketcan/bus.hpp:73"
+      ],
+      "tests": [
+        "interop/can_interop_peer.cpp:31",
+        "interop/test_cangen_candump_interop.cpp:29",
+        "interop/test_cangen_candump_interop.cpp:65",
+        "interop/test_two_process_interop.cpp:25",
+        "interop/test_two_process_interop.cpp:102",
+        "interop/test_two_process_interop.cpp:167",
+        "interop/test_two_process_interop.cpp:213"
+      ]
+    },
+    {
+      "id": "REQ-SCAN-006",
+      "title": "SocketCAN close is idempotent and unblocks readers",
+      "description": "close() shall be idempotent, join the background reader thread, close the underlying socket, and close every subscriber channel so blocked recv() callers unblock.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/socketcan/bus.cpp:143",
+        "include/can/socketcan/bus.hpp:27",
+        "include/can/socketcan/bus.hpp:53",
+        "include/can/socketcan/bus.hpp:77"
+      ],
+      "tests": [
+        "interop/can_interop_peer.cpp:31",
+        "interop/test_two_process_interop.cpp:25"
+      ]
+    },
+    {
+      "id": "REQ-SCAN-007",
+      "title": "SocketCAN classic-frame decode is field-exact",
+      "description": "The reader thread shall decode a received classic can_frame into a Frame whose id (with SFF/EFF masking applied per the EFF flag), ext, rtr, and data (length-truncated to can_dlc) fields exactly match the kernel frame\u2019s wire content.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/socketcan/bus.cpp:164",
+        "include/can/socketcan/bus.hpp:28",
+        "include/can/socketcan/bus.hpp:73"
+      ],
+      "tests": [
+        "interop/can_interop_peer.cpp:32",
+        "interop/test_cangen_candump_interop.cpp:29",
+        "interop/test_cangen_candump_interop.cpp:65",
+        "interop/test_two_process_interop.cpp:26",
+        "interop/test_two_process_interop.cpp:102"
+      ]
+    },
+    {
+      "id": "REQ-SCAN-008",
+      "title": "SocketCAN FD-frame decode is field-exact",
+      "description": "The reader thread shall decode a received canfd_frame into a Frame with fd=true and brs/esi set exactly per the CANFD_BRS/CANFD_ESI flag bits, and data (up to 64 bytes) exactly matching the kernel frame\u2019s payload.",
+      "standard_ref": "iso26262",
+      "severity": "safety",
+      "asil": "ASIL-B",
+      "implementations": [
+        "src/socketcan/bus.cpp:164",
+        "include/can/socketcan/bus.hpp:29",
+        "include/can/socketcan/bus.hpp:73"
+      ],
+      "tests": [
+        "interop/can_interop_peer.cpp:32",
+        "interop/test_two_process_interop.cpp:26",
+        "interop/test_two_process_interop.cpp:167"
+      ]
+    }
+  ]
+}

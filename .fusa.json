@@ -3,12 +3,16 @@
   "configVersion": "1.0",
   "project": {
     "name": "cpp-CAN",
-    "version": "0.2.1"
+    "version": "0.2.2"
   },
   "sourceDirs": [
     "src",
     "include"
   ],
+  "excludePatterns": [
+    "build",
+    "build-*"
+  ],
   "standard": "iso26262",
-  "strict": false
+  "strict": true
 }

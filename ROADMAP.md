@@ -22,7 +22,22 @@ subsystem itself, plus `can-utils` (`candump`/`cangen`/`cansend`) — an
 entirely separate, upstream-maintained codebase
 (github.com/linux-can/can-utils) from cpp-CAN.
 
-**Done — both deliverables**, landed as a new `can-interop` CI job
+**Done — both deliverables implemented and passing where they can run**, landed
+as a new `can-interop` CI job, **but currently unverified in hosted CI**: every
+`can-interop` run to date, including the run that produced the v0.2.0 release,
+has taken the probe-and-skip path, not the live path — GitHub-hosted
+`ubuntu-22.04` runners' kernel (`6.8.0-1062-azure` as of this writing) does not
+ship the `vcan` module at all (`modprobe: FATAL: Module vcan not found`), so
+`sudo modprobe vcan` fails immediately on every run. This is a hosted-runner
+kernel limitation, not a permissions or setup-script problem — a container
+can't work around it either, since containers share the host kernel. The job
+now emits a loud `::warning::` annotation and job-summary line (not a silent
+`::notice::`) whenever it takes the skip path, so this is visible without
+digging into logs. Until a self-hosted runner (or a hosted image that ships
+`vcan`) is available, "Done" means: the live-path code is implemented, builds,
+and is exercised locally by any contributor with `vcan` support, and the
+skip-path is verified in hosted CI on every run — the live path itself has
+**not** been exercised in hosted CI (tracked: #30).
 (`.github/workflows/ci.yml`), gated behind `-DCPPCAN_INTEROP_TESTS=ON`
 (Linux only — see `interop/CMakeLists.txt`) so it is absent from the
 default cross-platform `build-and-test` matrix:

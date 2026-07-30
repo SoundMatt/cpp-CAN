@@ -65,7 +65,7 @@ struct Frame {
 
     // Lossless conversion to relay::Message (§18.2 member-function convention).
     // Delegates to the free function below.
-    // fusa:req REQ-CAN-007 REQ-CAN-015
+    // fusa:req REQ-CAN-007 REQ-CAN-015 REQ-CAN-019
     relay::Message to_message() const;
 };
 
