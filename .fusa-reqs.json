@@ -1302,7 +1302,7 @@
     {
       "id": "REQ-RELAY-020",
       "title": "kRelaySpecVersion constant",
-      "description": "The system shall export relay::kRelaySpecVersion equal to the RELAY spec version defined in spec/version.json (\"1.11\"), as the single source of truth for every reported spec_version.",
+      "description": "The system shall export relay::kRelaySpecVersion equal to the RELAY spec version defined in spec/version.json (\"2.0\"), as the single source of truth for every reported spec_version.",
       "standard_ref": "iso26262",
       "severity": "safety",
       "asil": "ASIL-B",
@@ -1954,8 +1954,8 @@
       "severity": "safety",
       "asil": "ASIL-B",
       "implementations": [
-        "src/socketcan/bus.cpp:129",
-        "src/socketcan/bus.cpp:164",
+        "src/socketcan/bus.cpp:131",
+        "src/socketcan/bus.cpp:166",
         "include/can/socketcan/bus.hpp:26",
         "include/can/socketcan/bus.hpp:53",
         "include/can/socketcan/bus.hpp:73"
@@ -1978,7 +1978,7 @@
       "severity": "safety",
       "asil": "ASIL-B",
       "implementations": [
-        "src/socketcan/bus.cpp:143",
+        "src/socketcan/bus.cpp:145",
         "include/can/socketcan/bus.hpp:27",
         "include/can/socketcan/bus.hpp:53",
         "include/can/socketcan/bus.hpp:77"
@@ -1996,7 +1996,7 @@
       "severity": "safety",
       "asil": "ASIL-B",
       "implementations": [
-        "src/socketcan/bus.cpp:164",
+        "src/socketcan/bus.cpp:166",
         "include/can/socketcan/bus.hpp:28",
         "include/can/socketcan/bus.hpp:73"
       ],
@@ -2016,7 +2016,7 @@
       "severity": "safety",
       "asil": "ASIL-B",
       "implementations": [
-        "src/socketcan/bus.cpp:164",
+        "src/socketcan/bus.cpp:166",
         "include/can/socketcan/bus.hpp:29",
         "include/can/socketcan/bus.hpp:73"
       ],
