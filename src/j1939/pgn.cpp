@@ -20,9 +20,9 @@ DecodedID decode_id(uint32_t id) noexcept {
 
     PGN pgn;
     if (pf < 240) {
-        pgn = static_cast<PGN>(static_cast<uint32_t>(dp) << 17 | static_cast<uint32_t>(pf) << 8);
+        pgn = static_cast<PGN>(static_cast<uint32_t>(dp) << 16 | static_cast<uint32_t>(pf) << 8);
     } else {
-        pgn = static_cast<PGN>(static_cast<uint32_t>(dp) << 17 | static_cast<uint32_t>(pf) << 8 | ps);
+        pgn = static_cast<PGN>(static_cast<uint32_t>(dp) << 16 | static_cast<uint32_t>(pf) << 8 | ps);
     }
     return {priority, pgn, src};
 }
@@ -31,7 +31,7 @@ DecodedID decode_id(uint32_t id) noexcept {
 uint32_t encode_id(Priority priority, PGN pgn, uint8_t src) noexcept {
     uint8_t  pf = static_cast<uint8_t>((pgn >> 8) & 0xFF);
     uint8_t  ps = static_cast<uint8_t>(pgn & 0xFF);
-    uint8_t  dp = static_cast<uint8_t>((pgn >> 17) & 0x01);
+    uint8_t  dp = static_cast<uint8_t>((pgn >> 16) & 0x01);
     uint32_t id = 0;
     id |= static_cast<uint32_t>(priority & 0x07) << 26;
     id |= static_cast<uint32_t>(dp) << 24;
@@ -125,11 +125,13 @@ std::error_code Bus::send_tp(const Frame& f, std::chrono::milliseconds packet_de
         static_cast<uint8_t>(f.pgn >> 8),
         static_cast<uint8_t>(f.pgn >> 16),
     };
-    uint32_t bam_id = encode_id(f.priority, kPgnTPCM, src_);
+    uint32_t bam_id = encode_id(f.priority, kPgnTPCM, src_)
+                    | static_cast<uint32_t>(kBroadcastAddr) << 8;
     if (auto err = can_->send({bam_id, true, false, false, false, bam}); err) return err;
 
     // 2. Send TP.DT packets
-    uint32_t dt_base = encode_id(f.priority, kPgnTPDT, src_);
+    uint32_t dt_base = encode_id(f.priority, kPgnTPDT, src_)
+                     | static_cast<uint32_t>(kBroadcastAddr) << 8;
     for (int seq = 1; seq <= num_packets; ++seq) {
         if (seq > 1) std::this_thread::sleep_for(packet_delay);
 
@@ -160,6 +162,7 @@ Bus::subscribe_tp(std::vector<PGN> pgns) {
             Priority priority{};
             uint8_t  src{};
             std::vector<uint8_t> buf;
+            std::vector<bool>    seen;
             int      received{};
         };
         std::unordered_map<uint8_t, BamSession> sessions;
@@ -178,13 +181,16 @@ Bus::subscribe_tp(std::vector<PGN> pgns) {
                     static_cast<uint32_t>(cf.data[6]) << 8  |
                     static_cast<uint32_t>(cf.data[7]) << 16);
                 sessions[src] = {total, np, target, priority, src,
-                                  std::vector<uint8_t>(total), 0};
+                                  std::vector<uint8_t>(total),
+                                  std::vector<bool>(np, false), 0};
             } else if (pgn == kPgnTPDT) {
                 auto it = sessions.find(src);
                 if (it == sessions.end() || cf.data.size() < 8) continue;
                 auto& sess = it->second;
                 int seq = cf.data[0];
                 if (seq < 1 || seq > sess.num_packets) continue;
+                if (sess.seen[seq - 1]) continue;  // ignore duplicate segments
+                sess.seen[seq - 1] = true;
                 int offset = (seq - 1) * kTPBytesPerPacket;
                 for (int i = 1; i <= kTPBytesPerPacket; ++i) {
                     int dst = offset + i - 1;
