@@ -12,6 +12,25 @@
 
 namespace can {
 
+namespace {
+
+// ISO 11898-1 CAN-FD Data Length Code (DLC) mapping: the on-wire data
+// length of a CAN-FD frame may only be one of these values (DLC 9–15 map
+// to 12/16/20/24/32/48/64 respectively); no other length is representable
+// on the wire, and the Linux kernel (and other CAN-FD stacks) rejects any
+// canfd_frame.len outside this set.
+bool is_canonical_fd_len(std::size_t len) noexcept {
+    switch (len) {
+        case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8:
+        case 12: case 16: case 20: case 24: case 32: case 48: case 64:
+            return true;
+        default:
+            return false;
+    }
+}
+
+} // anonymous namespace
+
 // ── validate_frame ────────────────────────────────────────────────────────────
 
 // fusa:req REQ-CAN-009 REQ-CAN-010 REQ-CAN-011 REQ-CAN-012 REQ-CAN-013 REQ-CAN-014
@@ -43,10 +62,14 @@ void validate_frame(const Frame& f) {
             throw ErrInvalidFrame("standard CAN frame data exceeds 8 bytes");
         if (f.fd && f.data.size() > kCANFDMaxDataLen)
             throw ErrInvalidFrame("CAN FD frame data exceeds 64 bytes");
+        if (f.fd && !is_canonical_fd_len(f.data.size()))
+            throw ErrInvalidFrame(
+                "CAN FD data length is not a canonical DLC length "
+                "(must be one of 0-8,12,16,20,24,32,48,64 bytes)");
         if (f.brs && !f.fd)
             throw ErrInvalidFrame("BRS requires fd=true");
         if (f.esi && !f.fd)
-            throw ErrInvalidFrame("ESI requires fd=true or xl=true");
+            throw ErrInvalidFrame("ESI requires fd=true");
     }
 }
 
@@ -119,6 +142,12 @@ Frame from_message(const relay::Message& m) {
     }
     it = m.meta.find("can.sec");
     if (it != m.meta.end() && it->second == "true") f.sec = true;
+
+    // Ensure a Frame reconstructed from arbitrary meta/id fields is
+    // structurally valid (REQ-CAN-015) before handing it to callers that
+    // may not themselves call validate_frame (e.g. direct from_message
+    // callers outside CanAdapter::send).
+    validate_frame(f);
     return f;
 }
 
@@ -137,7 +166,12 @@ public:
             Frame f = from_message(msg);
             return bus_->send(std::move(f));
         } catch (const ErrInvalidFrame& e) {
-            return relay::make_error_code(relay::Errc::payload_too_large);
+            // Distinct from relay::Errc::payload_too_large: from_message's
+            // validate_frame() rejects structurally-invalid frames for many
+            // reasons besides oversize payloads (bad ID width, illegal flag
+            // combinations, ...); collapsing all of them into
+            // payload_too_large lost error fidelity for callers.
+            return std::make_error_code(std::errc::invalid_argument);
         }
     }
 

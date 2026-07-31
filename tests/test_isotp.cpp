@@ -149,6 +149,92 @@ TEST_CASE("multi-frame: consecutive frame sequence integrity", "[isotp][REQ-ISOT
     CHECK(got == payload);
 }
 
+// ── Malformed multi-frame reassembly regressions (ISO 15765-2) ─────────────────
+//
+// ISO 15765-2 segmented-transfer semantics: a sender only emits a further
+// Consecutive Frame while remaining unsent payload > 0, so a conformant
+// transfer never produces a CF whose PCI byte is followed by zero data
+// bytes. Previously, Conn::recv's FF-reassembly loop computed
+// chunk_len = min(cf.data.size()-1, remaining); a PCI-only CF made
+// chunk_len == 0 on every iteration, buf never grew, and the reassembly
+// loop never terminated — an unbounded-consumption DoS from a single
+// malformed/malicious peer, compounded by there being no timeout to
+// recover automatically. This test proves both that recv() now rejects a
+// PCI-only CF immediately (not merely eventually via timeout), and that
+// recv() is bounded even if a defect like this recurs.
+
+TEST_CASE("recv rejects a PCI-only Consecutive Frame instead of looping forever",
+          "[isotp][REQ-ISOTP-011][REQ-SEC-011]") {
+    auto bus = virt::Bus::create();
+    Config cfg{0x7E0, 0x7E8, false, 0, 0, std::chrono::milliseconds{300}};
+    auto [recvr, err] = Conn::create(bus, cfg);
+    REQUIRE_FALSE(err);
+
+    // First Frame: advertises a 20-byte multi-frame transfer, 6 bytes here.
+    std::vector<uint8_t> ff_data = {0x10, 0x14, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+    REQUIRE_FALSE(bus->send(Frame{0x7E8, false, false, false, false, ff_data}));
+
+    // Malformed Consecutive Frame: PCI byte only (sn=1), zero payload
+    // bytes. A conformant sender never emits this.
+    REQUIRE_FALSE(bus->send(Frame{0x7E8, false, false, false, false,
+                                   std::vector<uint8_t>{0x21}}));
+
+    auto start = std::chrono::steady_clock::now();
+    auto [got, recv_err] = recvr->recv(std::chrono::milliseconds{300});
+    auto elapsed = std::chrono::steady_clock::now() - start;
+
+    CHECK(recv_err == std::make_error_code(std::errc::bad_message));
+    // Rejected immediately by the explicit PCI-length guard, well within
+    // the 300ms recv timeout — not merely eventually via the timeout
+    // fallback (which alone would still leave a stalled-but-bounded wait).
+    CHECK(elapsed < std::chrono::milliseconds{200});
+
+    bus->close();
+}
+
+// ── ISO-TP application-level timers (N_Bs / N_Cr) ───────────────────────────────
+//
+// ISO 15765-2 defines application-level timers (N_Bs for awaiting Flow
+// Control, N_Cr for awaiting the next Consecutive Frame) that bound how
+// long a receiver/sender waits before aborting a stalled transfer.
+// Previously recv()/wait_fc()/recv_cf() discarded their `timeout`
+// parameter and blocked on the underlying channel indefinitely; a stalled
+// or malicious peer that stopped sending mid-transfer hung the caller
+// forever despite it supplying a timeout.
+
+TEST_CASE("recv returns ErrTimeout (bounded) when no frame ever arrives",
+          "[isotp][REQ-ISOTP-013][REQ-SEC-011]") {
+    auto bus = virt::Bus::create();
+    auto [conn, err] = Conn::create(bus, Config{0x7E0, 0x7E8});
+    REQUIRE_FALSE(err);
+
+    auto start = std::chrono::steady_clock::now();
+    auto [got, recv_err] = conn->recv(std::chrono::milliseconds{100});
+    auto elapsed = std::chrono::steady_clock::now() - start;
+
+    CHECK(recv_err == can::ErrTimeout());
+    CHECK(elapsed < std::chrono::milliseconds{1000});
+    bus->close();
+}
+
+TEST_CASE("send returns ErrTimeout (bounded) when Flow Control never arrives",
+          "[isotp][REQ-ISOTP-006][REQ-SEC-011]") {
+    auto bus = virt::Bus::create();
+    Config cfg{0x7E0, 0x7E8, false, 0, 0, std::chrono::milliseconds{100}};
+    auto [conn, err] = Conn::create(bus, cfg);
+    REQUIRE_FALSE(err);
+
+    // No peer is listening on 0x7E8 to answer with a Flow Control frame.
+    std::vector<uint8_t> payload(20, 0xEE);
+    auto start = std::chrono::steady_clock::now();
+    auto send_err = conn->send(payload);
+    auto elapsed = std::chrono::steady_clock::now() - start;
+
+    CHECK(send_err == can::ErrTimeout());
+    CHECK(elapsed < std::chrono::milliseconds{1000});
+    bus->close();
+}
+
 TEST_CASE("recv returns error when bus closes during receive", "[isotp][REQ-ISOTP-013]") {
     auto bus  = virt::Bus::create();
     auto [conn, err] = Conn::create(bus, Config{0x7E0, 0x7E8});

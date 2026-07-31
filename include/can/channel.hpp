@@ -79,6 +79,21 @@ public:
         return val;
     }
 
+    // Timed recv — blocks until an item is available, the channel is closed,
+    // or timeout elapses. Returns nullopt on timeout as well as on
+    // closed+empty; use is_closed() to distinguish if needed.
+    template<typename Rep, typename Period>
+    std::optional<T> recv_for(const std::chrono::duration<Rep, Period>& timeout) {
+        std::unique_lock<std::mutex> lk(mu_);
+        if (!cv_not_empty_.wait_for(lk, timeout, [this]{ return !buf_.empty() || closed_; }))
+            return std::nullopt;  // timed out
+        if (buf_.empty()) return std::nullopt;
+        T val = std::move(buf_.front());
+        buf_.pop_front();
+        cv_not_full_.notify_one();
+        return val;
+    }
+
     // Non-blocking recv — returns nullopt if empty (regardless of closed state).
     std::optional<T> try_recv() {
         std::lock_guard<std::mutex> lk(mu_);

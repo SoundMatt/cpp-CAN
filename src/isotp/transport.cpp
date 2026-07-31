@@ -127,8 +127,12 @@ std::error_code Conn::send_multi_frame(const std::vector<uint8_t>& payload) {
 // fusa:req REQ-SEC-011
 std::pair<std::vector<uint8_t>, std::error_code>
 Conn::recv(std::chrono::milliseconds timeout) {
-    auto opt_frame = rx_ch_->recv();  // TODO: add timeout to Chan
-    if (!opt_frame) return {{}, std::make_error_code(std::errc::connection_aborted)};
+    auto opt_frame = rx_ch_->recv_for(timeout);
+    if (!opt_frame) {
+        if (rx_ch_->is_closed())
+            return {{}, std::make_error_code(std::errc::connection_aborted)};
+        return {{}, can::ErrTimeout()};
+    }
 
     const auto& first = *opt_frame;
     if (first.data.empty()) return {{}, std::make_error_code(std::errc::bad_message)};
@@ -159,6 +163,11 @@ Conn::recv(std::chrono::milliseconds timeout) {
             if (cf_err) return {{}, cf_err};
             if ((cf.data[0] & 0x0F) != (sn & 0x0F))
                 return {{}, std::make_error_code(std::errc::bad_message)};
+            // A consecutive frame must carry at least one data byte after its
+            // PCI byte; a PCI-only CF makes no forward progress and would
+            // otherwise loop forever.
+            if (cf.data.size() < 2)
+                return {{}, std::make_error_code(std::errc::bad_message)};
             int remaining = length - static_cast<int>(buf.size());
             int chunk_len = std::min<int>(static_cast<int>(cf.data.size()) - 1, remaining);
             buf.insert(buf.end(), cf.data.begin() + 1, cf.data.begin() + 1 + chunk_len);
@@ -182,21 +191,39 @@ Conn::recv(std::chrono::milliseconds timeout) {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// ISO 15765-2 N_Bs: bounded wait for a Flow Control frame. The deadline is
+// fixed at entry so that a stream of non-FC junk frames cannot be used to
+// keep resetting the wait and stall the caller forever.
 std::pair<std::vector<uint8_t>, std::error_code>
-Conn::wait_fc(std::chrono::milliseconds /*timeout*/) {
+Conn::wait_fc(std::chrono::milliseconds timeout) {
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
     while (true) {
-        auto opt = rx_ch_->recv();
-        if (!opt) return {{}, std::make_error_code(std::errc::connection_aborted)};
+        auto now = std::chrono::steady_clock::now();
+        if (now >= deadline) return {{}, can::ErrTimeout()};
+        auto opt = rx_ch_->recv_for(deadline - now);
+        if (!opt) {
+            if (rx_ch_->is_closed())
+                return {{}, std::make_error_code(std::errc::connection_aborted)};
+            return {{}, can::ErrTimeout()};
+        }
         if (opt->data.size() >= 3 && (opt->data[0] & 0xF0) == kTypeFC)
             return {opt->data, {}};
     }
 }
 
+// ISO 15765-2 N_Cr: bounded wait for the next Consecutive Frame.
 std::pair<Frame, std::error_code>
-Conn::recv_cf(std::chrono::milliseconds /*timeout*/) {
+Conn::recv_cf(std::chrono::milliseconds timeout) {
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
     while (true) {
-        auto opt = rx_ch_->recv();
-        if (!opt) return {{}, std::make_error_code(std::errc::connection_aborted)};
+        auto now = std::chrono::steady_clock::now();
+        if (now >= deadline) return {{}, can::ErrTimeout()};
+        auto opt = rx_ch_->recv_for(deadline - now);
+        if (!opt) {
+            if (rx_ch_->is_closed())
+                return {{}, std::make_error_code(std::errc::connection_aborted)};
+            return {{}, can::ErrTimeout()};
+        }
         if (!opt->data.empty() && (opt->data[0] & 0xF0) == kTypeCF)
             return {*opt, {}};
     }

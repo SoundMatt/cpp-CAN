@@ -4,6 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <can/j1939/pgn.hpp>
+#include <chrono>
 #include <thread>
 
 namespace can::j1939 {
@@ -105,7 +106,19 @@ static constexpr PGN  kPgnTPCM = 0xEC00;
 static constexpr PGN  kPgnTPDT = 0xEB00;
 static constexpr uint8_t kBAMControl = 0x20;
 static constexpr int  kTPMaxDataBytes   = 1785;
+static constexpr int  kTPMinDataBytes   = 9;
 static constexpr int  kTPBytesPerPacket = 7;
+
+// J1939-21 receiver stall/abort timeout (T1): the maximum time a BAM
+// session may go without receiving a further TP.DT segment before it must
+// be considered abandoned and reclaimed. Bounds memory held by stalled or
+// spoofed BAM announcements that never complete.
+static constexpr std::chrono::milliseconds kBamSessionTimeout{750};
+
+// Upper bound on concurrently-tracked BAM sessions, independent of the
+// timeout sweep above — belt-and-braces cap on worst-case memory even if
+// many sources open sessions faster than the timeout reclaims them.
+static constexpr std::size_t kMaxBamSessions = 256;
 
 std::error_code Bus::send_tp(const Frame& f, std::chrono::milliseconds packet_delay) {
     int n = static_cast<int>(f.data.size());
@@ -164,25 +177,51 @@ Bus::subscribe_tp(std::vector<PGN> pgns) {
             std::vector<uint8_t> buf;
             std::vector<bool>    seen;
             int      received{};
+            std::chrono::steady_clock::time_point last_seen;
         };
         std::unordered_map<uint8_t, BamSession> sessions;
+
+        auto sweep_expired = [&sessions](std::chrono::steady_clock::time_point now) {
+            for (auto it = sessions.begin(); it != sessions.end(); ) {
+                if (now - it->second.last_seen > kBamSessionTimeout)
+                    it = sessions.erase(it);
+                else
+                    ++it;
+            }
+        };
 
         while (auto opt = raw->recv()) {
             const auto& cf = *opt;
             if (!cf.ext) continue;
             auto [priority, pgn, src] = decode_id(cf.id);
 
+            auto now = std::chrono::steady_clock::now();
+            // J1939-21 T1: reclaim any session that has gone silent past the
+            // stall/abort timeout before considering this frame.
+            sweep_expired(now);
+
             if (pgn == kPgnTPCM) {
                 if (cf.data.size() < 8 || cf.data[0] != kBAMControl) continue;
                 int total = static_cast<int>(cf.data[1]) | static_cast<int>(cf.data[2]) << 8;
                 int np    = cf.data[3];
+                // SAE J1939-21 TP.CM_BAM: total message size is 9-1785 bytes.
+                // Reject anything outside that range before allocating —
+                // an unchecked size field otherwise drives an unbounded
+                // std::vector allocation from a single spoofed frame.
+                if (total < kTPMinDataBytes || total > kTPMaxDataBytes) continue;
+                if (np <= 0) continue;
                 PGN target = static_cast<PGN>(
                     static_cast<uint32_t>(cf.data[5])       |
                     static_cast<uint32_t>(cf.data[6]) << 8  |
                     static_cast<uint32_t>(cf.data[7]) << 16);
+                // Cap concurrently-tracked sessions independent of the
+                // timeout sweep above; drop the new announcement rather
+                // than let tracked state grow past the bound.
+                if (sessions.find(src) == sessions.end() && sessions.size() >= kMaxBamSessions)
+                    continue;
                 sessions[src] = {total, np, target, priority, src,
                                   std::vector<uint8_t>(total),
-                                  std::vector<bool>(np, false), 0};
+                                  std::vector<bool>(np, false), 0, now};
             } else if (pgn == kPgnTPDT) {
                 auto it = sessions.find(src);
                 if (it == sessions.end() || cf.data.size() < 8) continue;
@@ -191,6 +230,7 @@ Bus::subscribe_tp(std::vector<PGN> pgns) {
                 if (seq < 1 || seq > sess.num_packets) continue;
                 if (sess.seen[seq - 1]) continue;  // ignore duplicate segments
                 sess.seen[seq - 1] = true;
+                sess.last_seen = now;
                 int offset = (seq - 1) * kTPBytesPerPacket;
                 for (int i = 1; i <= kTPBytesPerPacket; ++i) {
                     int dst = offset + i - 1;
