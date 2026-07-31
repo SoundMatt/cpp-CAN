@@ -44,6 +44,53 @@ TEST_CASE("from_message: invalid ID throws ErrInvalidFrame", "[relay_adapter][RE
     REQUIRE_THROWS_AS(from_message(msg), ErrInvalidFrame);
 }
 
+// ── from_message validates the reconstructed Frame (REQ-CAN-015) ────────────
+//
+// from_message() previously only range-checked the ID before returning; it
+// never called validate_frame(), so a structurally invalid Frame (e.g. a
+// standard 11-bit ID with can.ext=false but a value that only fits in 29
+// bits, or a non-canonical FD length) could be constructed and handed
+// straight to any direct caller that doesn't separately call
+// validate_frame() itself.
+
+TEST_CASE("from_message: standard ID that overflows 11 bits throws ErrInvalidFrame",
+          "[relay_adapter][REQ-CAN-015]") {
+    relay::Message msg;
+    msg.protocol = relay::Protocol::CAN;
+    msg.id       = "2048";  // 0x800 — exceeds kCANMaxStdID (0x7FF) for ext=false
+    REQUIRE_THROWS_AS(from_message(msg), ErrInvalidFrame);
+}
+
+TEST_CASE("from_message: non-canonical CAN FD length throws ErrInvalidFrame",
+          "[relay_adapter][REQ-CAN-015]") {
+    relay::Message msg;
+    msg.protocol      = relay::Protocol::CAN;
+    msg.id            = "256";
+    msg.meta["can.fd"] = "true";
+    msg.payload        = std::vector<uint8_t>(9, 0xAA);  // 9 is not a canonical FD DLC length
+    REQUIRE_THROWS_AS(from_message(msg), ErrInvalidFrame);
+}
+
+TEST_CASE("adapt: send of a structurally invalid frame does not report payload_too_large",
+          "[relay_adapter][REQ-CAN-016]") {
+    auto bus  = virt::Bus::create();
+    auto node = adapt(bus);
+
+    relay::Message msg;
+    msg.protocol      = relay::Protocol::CAN;
+    msg.id            = "256";
+    msg.meta["can.fd"] = "true";
+    msg.payload        = std::vector<uint8_t>(9, 0xAA);  // non-canonical FD length
+
+    auto err = node->send(relay::Context::background(), msg);
+    REQUIRE(err);
+    // Previously every ErrInvalidFrame reason was collapsed into
+    // payload_too_large, which is misleading for a non-oversize structural
+    // failure; it must now be reported distinctly.
+    CHECK(err != relay::ErrPayloadTooLarge());
+    node->close();
+}
+
 TEST_CASE("adapt: protocol() returns CAN", "[relay_adapter][REQ-CAN-016]") {
     auto bus  = virt::Bus::create();
     auto node = adapt(bus);

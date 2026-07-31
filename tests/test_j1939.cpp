@@ -97,6 +97,81 @@ TEST_CASE("J1939 Bus: PGN filter - non-matching PGN not delivered", "[j1939][REQ
     can_bus->close();
 }
 
+// ── BAM reassembly: unchecked size field (SAE J1939-21 TP.CM_BAM) ──────────────
+//
+// SAE J1939-21 TP.CM_BAM: total message size is 9-1785 bytes (9-bit field).
+// subscribe_tp's BAM handler previously read `total` straight from the
+// frame and used it unchecked to allocate a std::vector<uint8_t>(total),
+// with no relationship enforced between the declared total and the
+// declared num_packets — a spoofed announcement could claim a small
+// num_packets (so the "completion" condition `received == num_packets`
+// is trivially satisfiable from a couple of real Data Transfer frames)
+// together with an out-of-protocol-range total, and still get delivered
+// to subscribers as a mostly-zero-padded oversized message. This proves
+// such an announcement is rejected outright (no session created, nothing
+// delivered) rather than silently accepted and short-completed.
+
+TEST_CASE("subscribe_tp: BAM announcing an out-of-range total is rejected, "
+          "not silently short-completed",
+          "[j1939][REQ-J1939-005][REQ-SEC-011]") {
+    auto can_bus = can::virt::Bus::create();
+    auto j_bus   = Bus::create(can_bus, 0x00);
+
+    auto [tp_ch, tp_err] = j_bus->subscribe_tp({0x0FECA});
+    REQUIRE_FALSE(tp_err);
+
+    constexpr uint8_t kSpoofedSrc = 0x11;
+    constexpr PGN      kTPCM      = static_cast<PGN>(0xEC00);
+    constexpr PGN      kTPDT      = static_cast<PGN>(0xEB00);
+
+    // TP.CM_BAM declaring total=2000 (over J1939-21's 1785-byte maximum)
+    // but only num_packets=3 — internally inconsistent (2000 bytes would
+    // require 286 packets of 7 bytes each), but a receiver that only
+    // range-checks nothing at all will still allocate a 2000-byte buffer
+    // and consider the transfer "complete" after 3 packets.
+    uint32_t bam_id = encode_id(6, kTPCM, kSpoofedSrc) |
+                       (static_cast<uint32_t>(kBroadcastAddr) << 8);
+    std::vector<uint8_t> bogus_bam = {
+        0x20,               // BAM control byte
+        0xD0, 0x07,         // total = 2000 (0x07D0), little-endian
+        0x03,               // num_packets = 3
+        0xFF,
+        static_cast<uint8_t>(0x0FECA),
+        static_cast<uint8_t>(0x0FECA >> 8),
+        static_cast<uint8_t>(0x0FECA >> 16),
+    };
+    REQUIRE_FALSE(can_bus->send(can::Frame{bam_id, true, false, false, false, bogus_bam}));
+
+    // Matching Data Transfer frames for the (bogus) declared num_packets.
+    uint32_t dt_id = encode_id(6, kTPDT, kSpoofedSrc) |
+                      (static_cast<uint32_t>(kBroadcastAddr) << 8);
+    for (uint8_t seq = 1; seq <= 3; ++seq) {
+        std::vector<uint8_t> pkt(8, 0xAA);
+        pkt[0] = seq;
+        REQUIRE_FALSE(can_bus->send(can::Frame{dt_id, true, false, false, false, pkt}));
+    }
+
+    // A conformant receiver must reject the out-of-range total before
+    // ever creating a session for it, so these three DT frames — despite
+    // satisfying the announced (bogus) num_packets — must not produce a
+    // delivered message.
+    std::this_thread::sleep_for(std::chrono::milliseconds{50});
+    CHECK(tp_ch->size() == 0);
+
+    // A subsequent legitimate BAM transfer from the SAME source address
+    // must still work — proves the rejected announcement didn't leave
+    // corrupt/stuck session state behind.
+    std::vector<uint8_t> good_payload(20, 0x77);
+    Frame good{6, 0x0FECA, kSpoofedSrc, kBroadcastAddr, good_payload};
+    std::thread t([&]{ j_bus->send(good); });
+    auto got = tp_ch->recv();
+    t.join();
+    REQUIRE(got.has_value());
+    CHECK(got->data == good_payload);
+
+    can_bus->close();
+}
+
 TEST_CASE("J1939 Transport Protocol: BAM send/receive", "[j1939][REQ-J1939-005][REQ-J1939-006]") {
     auto can_bus = can::virt::Bus::create();
     auto j_bus   = Bus::create(can_bus, 0x00);

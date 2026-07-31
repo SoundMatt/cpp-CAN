@@ -21,6 +21,9 @@ static uint64_t extract_raw(const std::vector<uint8_t>& data,
                              int start_bit, int length, ByteOrder order)
 {
     uint64_t raw = 0;
+    // Guard against malformed DBC input: a signal length outside 1..64 or a
+    // negative start bit would cause out-of-range shifts (UB) below.
+    if (length <= 0 || length > 64 || start_bit < 0) return 0;
     if (order == ByteOrder::LittleEndian) {
         for (int i = 0; i < length; ++i) {
             int bit     = start_bit + i;
@@ -44,6 +47,7 @@ static uint64_t extract_raw(const std::vector<uint8_t>& data,
 
 double Signal::decode(const std::vector<uint8_t>& data) const {
     uint64_t raw = extract_raw(data, start_bit, length, byte_order);
+    if (length <= 0 || length > 64) return static_cast<double>(raw) * factor + offset;
     if (is_signed) {
         int64_t signed_val = static_cast<int64_t>(raw);
         if (raw & (static_cast<uint64_t>(1) << (length - 1)))

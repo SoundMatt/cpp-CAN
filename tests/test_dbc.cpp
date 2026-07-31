@@ -113,3 +113,68 @@ TEST_CASE("signed signal decoding with offset", "[dbc][REQ-DBC-005]") {
     auto values = db->decode(256, data);
     CHECK(std::abs(values.at("EngineTemp") - 40.0) < 0.001);
 }
+
+// ── Malformed length/start_bit regression (out-of-range shift is UB) ───────────
+//
+// C++17 [expr.shift]p1: shifting by a negative amount or by >= the width of
+// the promoted left operand is undefined behavior. A DBC-declared signal
+// length outside 1..64, or a negative start_bit, previously drove
+// `1 << (length-1)`/`1ULL << i` shifts straight from untrusted DBC text with
+// no range check — attacker/third-party-file reachable. This must not
+// crash (and must not trip UBSan's shift checks); it must decode to 0.
+
+TEST_CASE("decode: signal length > 64 does not perform an out-of-range shift",
+          "[dbc][REQ-SEC-015]") {
+    const char* dbc = R"(
+BO_ 700 BadLen: 8 ECU
+ SG_ Bogus : 0|999@1+ (1,0) [0|0] "" ECU
+)";
+    std::istringstream ss(dbc);
+    auto db = parse(ss);
+    REQUIRE(db != nullptr);
+    const auto& sig = db->messages.at(700).signals.at("Bogus");
+    CHECK(sig.length == 999);
+
+    std::vector<uint8_t> data(8, 0xFF);
+    // Must not crash / UB; guarded path returns 0 for an unrepresentable length.
+    double val = sig.decode(data);
+    CHECK(val == 0.0);
+
+    auto values = db->decode(700, data);
+    CHECK(values.at("Bogus") == 0.0);
+}
+
+TEST_CASE("decode: signal length <= 0 does not perform an out-of-range shift",
+          "[dbc][REQ-SEC-015]") {
+    const char* dbc = R"(
+BO_ 701 ZeroLen: 8 ECU
+ SG_ Bogus : 0|0@1+ (1,0) [0|0] "" ECU
+)";
+    std::istringstream ss(dbc);
+    auto db = parse(ss);
+    REQUIRE(db != nullptr);
+    const auto& sig = db->messages.at(701).signals.at("Bogus");
+    CHECK(sig.length == 0);
+
+    std::vector<uint8_t> data(8, 0xFF);
+    double val = sig.decode(data);
+    CHECK(val == 0.0);
+}
+
+TEST_CASE("decode: negative start_bit does not perform an out-of-range shift",
+          "[dbc][REQ-SEC-015]") {
+    const char* dbc = R"(
+BO_ 702 NegStart: 8 ECU
+ SG_ Bogus : -5|8@1+ (1,0) [0|0] "" ECU
+)";
+    std::istringstream ss(dbc);
+    auto db = parse(ss);
+    REQUIRE(db != nullptr);
+    const auto& sig = db->messages.at(702).signals.at("Bogus");
+    CHECK(sig.start_bit == -5);
+
+    std::vector<uint8_t> data(8, 0xFF);
+    // Must not crash / UB; guarded path returns 0 for an unrepresentable start bit.
+    double val = sig.decode(data);
+    CHECK(val == 0.0);
+}

@@ -130,6 +130,47 @@ TEST_CASE("validate_frame: ESI without FD is invalid", "[can][REQ-CAN-014]") {
     REQUIRE_THROWS_AS(validate_frame(f), ErrInvalidFrame);
 }
 
+TEST_CASE("validate_frame: ESI-without-FD error message does not mention xl",
+          "[can][REQ-CAN-014]") {
+    Frame f{};
+    f.id = 0x100; f.esi = true;
+    f.data = {1};
+    try {
+        validate_frame(f);
+        FAIL("expected ErrInvalidFrame");
+    } catch (const ErrInvalidFrame& e) {
+        // The non-XL branch's ESI check previously said "ESI requires
+        // fd=true or xl=true" even though xl is necessarily false here.
+        CHECK(e.reason().find("xl") == std::string::npos);
+        CHECK(e.reason() == "ESI requires fd=true");
+    }
+}
+
+// ── CAN FD canonical DLC (ISO 11898-1) ────────────────────────────────────────
+//
+// A CAN-FD frame's on-wire data length may only be one of
+// {0..8,12,16,20,24,32,48,64}; DLC 9-15 map to 12/16/20/24/32/48/64. Any
+// other length is not representable on the wire and the Linux kernel
+// (and other CAN-FD stacks) rejects it. Accepting a non-canonical length
+// at validate_frame() only to have it fail downstream at the transport
+// (e.g. socketcan write() -> EINVAL) turns an actionable input error into
+// an opaque connection failure.
+
+TEST_CASE("validate_frame: canonical CAN FD lengths are accepted", "[can][REQ-CAN-011]") {
+    for (std::size_t len : {0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u,
+                             12u, 16u, 20u, 24u, 32u, 48u, 64u}) {
+        Frame f{0x100, false, false, true, false, std::vector<uint8_t>(len, 0)};
+        REQUIRE_NOTHROW(validate_frame(f));
+    }
+}
+
+TEST_CASE("validate_frame: non-canonical CAN FD length is rejected", "[can][REQ-CAN-011]") {
+    for (std::size_t len : {9u, 10u, 11u, 13u, 17u, 30u, 50u, 63u}) {
+        Frame f{0x100, false, false, true, false, std::vector<uint8_t>(len, 0)};
+        REQUIRE_THROWS_AS(validate_frame(f), ErrInvalidFrame);
+    }
+}
+
 // ── Frame XL fields ── REQ-CAN-001C ──────────────────────────────────────────
 
 TEST_CASE("Frame has CAN XL fields", "[can][REQ-CAN-001C]") {
